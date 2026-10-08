@@ -1,0 +1,25 @@
+body.admin { padding-bottom: 0; }
+.adm-top { background: var(--brand-d); color: #fff; }
+.adm-top-in { display: flex; gap: 14px; align-items: center; padding: 10px 16px; }
+.adm-top-in strong { flex: 1; }
+.adm-top a { color: #cfe; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 16px 0; }
+.stat { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; text-align: left; cursor: pointer; font: inherit; }
+.stat b { display: block; font-size: 1.6rem; color: var(--brand-d); }
+.stat span { color: var(--muted); font-size: .88rem; }
+.integr { grid-column: 1 / -1; margin: 0; font-size: .9rem; color: var(--muted); }
+.tabs, .views { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.tabs button, .views button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 14px; font: inherit; cursor: pointer; min-height: 40px; }
+.tabs button[aria-pressed="true"], .views button[aria-pressed="true"] { background: var(--brand); color: #fff; border-color: var(--brand); }
+.filters { display: grid; gap: 8px; grid-template-columns: 1fr; }
+@media (min-width: 800px) { .filters { grid-template-columns: 2fr 1.5fr 1fr 1fr auto auto; align-items: center; } }
+.adm-table { width: 100%; border-collapse: collapse; background: #fff; font-size: .92rem; }
+.adm-table th, .adm-table td { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
+.adm-table th { background: #eef4f6; }
+.acts button, [data-delleave], [data-retry], [data-resolve] { display: block; margin: 0 0 4px; border: 1px solid var(--brand); color: var(--brand); background: #fff; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: .85rem; cursor: pointer; width: 100%; }
+.acts button.danger { border-color: var(--danger); color: var(--danger); }
+.warn { color: var(--warn); }
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, .4); display: grid; place-items: center; z-index: 100; padding: 16px; }
+.modal-in { width: 100%; max-width: 480px; max-height: 90vh; overflow: auto; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 18px; border-radius: 10px; color: #fff; z-index: 200; }
+.toast.ok { background: var(--ok); } .toast.err { background: var(--danger); }

@@ -1,0 +1,5 @@
+mobile
+test
+data
+*.sqlite
+.env
