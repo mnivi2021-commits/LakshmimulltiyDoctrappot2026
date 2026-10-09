@@ -1,17 +1,20 @@
 /**
- * Lakshmi Multispecialty Hospital – always-on Google Sheets fallback
- * ------------------------------------------------------------------
- * Runs in Google's cloud (Apps Script web app), so it keeps working when the
+ * Lakshmi Multispecialty Hospital – always-on Google Cloud layer
+ * ----------------------------------------------------------------
+ * Runs in Google Apps Script (Google's cloud), so it keeps working when the
  * hospital PC (Node backend + XAMPP MySQL + cloudflared) is switched off.
  *
- *   POST  {"type":"request", ...}       → row in sheet "Requests"
- *   POST  anything else (post-call)     → row in sheet "Call Log"
- *   GET                                  → {"ok":true}  (health check)
+ *   POST {"object":"whatsapp_business_account", …}  → WhatsApp chatbot (WhatsApp.gs)
+ *   POST {"type":"request", …}                      → row in "Requests"
+ *   POST anything else (OmniDimension post-call)    → row in "Call Log"
+ *   GET  ?hub.mode=subscribe&hub.verify_token=…      → Meta webhook verification
+ *   GET  (anything else)                            → {"ok":true}
  *
- * Security: Apps Script cannot read HTTP headers, so every POST must carry the
- * secret either as a "secret" field in the JSON body or as ?key=... in the URL.
- * It must match the Script Property SHEETS_SECRET (Project Settings → Script
- * Properties). Nothing secret is written in this file.
+ * Security: Apps Script cannot read HTTP headers, so OmniDimension / backend
+ * requests must carry the secret as "secret" in the JSON body or ?key= in the
+ * URL, matching Script Property SHEETS_SECRET. WhatsApp requests are
+ * identified by their Meta payload (see WhatsApp.gs for the limits of that).
+ * No secret is written in this file – all live in Script Properties.
  */
 
 var TZ = 'Asia/Kolkata';
@@ -19,17 +22,30 @@ var MAX_CELL = 45000; // Google Sheets allows 50,000 characters per cell
 
 var REQUEST_SHEET = 'Requests';
 var REQUEST_HEADERS = ['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time',
-  'Reason', 'New/Existing', 'Language', 'Caller number', 'Call ID', 'Source', 'Status'];
+  'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status'];
 
 var CALL_SHEET = 'Call Log';
-var CALL_HEADERS = ['Timestamp', 'Caller number', 'Call ID', 'Duration', 'Summary', 'Outcome/disposition',
-  'Full transcript', 'Raw JSON'];
+var CALL_HEADERS = ['Timestamp', 'Caller number', 'Call ID', 'Duration', 'Summary', 'Outcome', 'Transcript', 'Raw JSON'];
+
+var WA_SESSIONS_SHEET = 'WA Sessions';
+var WA_SESSIONS_HEADERS = ['WhatsApp number', 'Step', 'Data (JSON)', 'Updated'];
+
+var WA_ERRORS_SHEET = 'WA Errors';
+var WA_ERRORS_HEADERS = ['Timestamp', 'Where', 'Error', 'Details'];
 
 var THANK_YOU = 'Thank you. I have noted your details. Our hospital staff will call you back to confirm your appointment.';
 
 // ---------------------------------------------------------------- entry points
 
 function doGet(e) {
+  var p = (e && e.parameter) || {};
+  if (p['hub.mode'] === 'subscribe') {
+    var expected = prop_('WA_VERIFY_TOKEN');
+    if (expected && p['hub.verify_token'] && safeEqual_(String(p['hub.verify_token']), String(expected))) {
+      return ContentService.createTextOutput(String(p['hub.challenge'] || '')).setMimeType(ContentService.MimeType.TEXT);
+    }
+    return ContentService.createTextOutput('Forbidden').setMimeType(ContentService.MimeType.TEXT);
+  }
   return json_({ ok: true });
 }
 
@@ -40,6 +56,17 @@ function doPost(e) {
   } catch (err) {
     return json_({ success: false, message: 'Invalid JSON' });
   }
+
+  // WhatsApp Cloud API webhook (no secret possible – identified by payload).
+  if (body && body.object === 'whatsapp_business_account') {
+    try {
+      handleWhatsApp(body);
+    } catch (err) {
+      try { logWaError_('doPost', err, ''); } catch (ignore) { /* never crash */ }
+    }
+    return json_({ ok: true }); // always 200 so Meta does not keep retrying
+  }
+
   if (!isAuthorised_(body, e)) return json_({ success: false });
 
   var lock = LockService.getScriptLock();
@@ -66,6 +93,7 @@ function doPost(e) {
 
 // ---------------------------------------------------------------- writers
 
+/** Appends one row to "Requests". Caller must hold the script lock. */
 function appendRequest_(ss, b) {
   var sheet = ensureSheet_(ss, REQUEST_SHEET, REQUEST_HEADERS);
   sheet.appendRow([
@@ -79,7 +107,7 @@ function appendRequest_(ss, b) {
     text_(patientType_(pick_(b, ['patient_type', 'new_or_existing']))),
     text_(pick_(b, ['language', 'call_language'])),
     text_(pick_(b, ['from_number', 'caller_number', 'caller_mobile', 'customer_number'])),
-    text_(pick_(b, ['call_sid', 'call_id', 'callId'])),
+    text_(pick_(b, ['call_sid', 'call_id', 'callId', 'message_id'])),
     text_(pick_(b, ['source']) || 'AI call – system offline'),
     text_(pick_(b, ['status']) || 'New'),
   ]);
@@ -92,7 +120,6 @@ function appendCallLog_(ss, b) {
     pick_(b, ['full_conversation', 'transcript', 'conversation']) ||
     interactionsText_(report.interactions || b.interactions);
 
-  var raw = copyWithoutSecret_(b);
   sheet.appendRow([
     now_(),
     text_(pick_(b, ['from_number', 'caller_number', 'phone_number', 'customer_number', 'from', 'caller'])),
@@ -103,11 +130,15 @@ function appendCallLog_(ss, b) {
     text_(pick_(report, ['disposition', 'outcome', 'call_outcome']) ||
       pick_(b, ['disposition', 'outcome', 'call_outcome', 'call_status', 'status'])),
     text_(stringify_(transcript)),
-    text_(JSON.stringify(raw)),
+    text_(JSON.stringify(copyWithoutSecret_(b))),
   ]);
 }
 
 // ---------------------------------------------------------------- helpers
+
+function prop_(name) {
+  return PropertiesService.getScriptProperties().getProperty(name);
+}
 
 function parseBody_(e) {
   var raw = e && e.postData && e.postData.contents;
@@ -117,7 +148,7 @@ function parseBody_(e) {
 }
 
 function isAuthorised_(body, e) {
-  var expected = PropertiesService.getScriptProperties().getProperty('SHEETS_SECRET');
+  var expected = prop_('SHEETS_SECRET');
   if (!expected) return false; // not configured → refuse everything
   var given = (body && body.secret) || (e && e.parameter && e.parameter.key) || '';
   return safeEqual_(String(given), String(expected));
@@ -130,7 +161,7 @@ function safeEqual_(a, b) {
   return diff === 0;
 }
 
-/** First non-empty value among several possible keys (also looks inside extracted_variables). */
+/** First non-empty value among several possible keys (also looks inside extracted_variables / parameters). */
 function pick_(obj, keys) {
   if (!obj || typeof obj !== 'object') return '';
   var sources = [obj];
@@ -202,6 +233,15 @@ function ensureSheet_(ss, name, headers) {
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+/** Creates all four sheets at once (optional: run once from the editor). */
+function setupSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  ensureSheet_(ss, REQUEST_SHEET, REQUEST_HEADERS);
+  ensureSheet_(ss, CALL_SHEET, CALL_HEADERS);
+  ensureSheet_(ss, WA_SESSIONS_SHEET, WA_SESSIONS_HEADERS);
+  ensureSheet_(ss, WA_ERRORS_SHEET, WA_ERRORS_HEADERS);
 }
 
 function now_() {

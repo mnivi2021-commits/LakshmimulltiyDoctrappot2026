@@ -24,23 +24,23 @@ function send(row) {
     .catch((e) => { console.error('[sheets] mirror failed:', e.name === 'TimeoutError' ? 'timeout' : e.message); return false; });
 }
 
-/** Successful voice booking → row with Source "AI call – booked", Status "Booked". */
+/** Successful voice booking → Source "AI call – booked", Status "Booked" (LMH number kept in Reason). */
 function mirrorBooking(a, { callId = null, callerNumber = null } = {}) {
   return send({
     patient_name: a.patient_name, mobile: a.mobile,
     doctor: `${a.doctor_name} – ${a.department}`,
     preferred_date: a.appointment_date, preferred_time: a.appointment_time,
-    reason: a.reason, patient_type: a.patient_type, language: a.language,
+    reason: `${a.reason} · Appointment ${a.appointment_no}`, patient_type: a.patient_type, language: a.language,
     from_number: callerNumber || '', call_sid: callId || a.call_id || '',
-    source: `AI call – booked (${a.appointment_no})`, status: 'Booked',
+    source: 'AI call – booked', status: 'Booked',
   });
 }
 
-/** staff_callback → row with Source "AI call – staff callback", Status "Callback requested". */
+/** staff_callback → Source "AI call – callback", Status "Callback". */
 function mirrorCallback({ patient_name, mobile, reason, language, callId = null }) {
   return send({
     patient_name: patient_name || '', mobile: mobile || '', doctor: '', reason, language: language || '',
-    call_sid: callId || '', source: 'AI call – staff callback', status: 'Callback requested',
+    call_sid: callId || '', source: 'AI call – callback', status: 'Callback',
   });
 }
 

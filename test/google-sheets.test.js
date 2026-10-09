@@ -9,7 +9,7 @@ const vm = require('vm');
 
 const CODE = fs.readFileSync(path.join(__dirname, '..', 'google-sheets', 'Code.gs'), 'utf8');
 
-function makeEnv({ secret = 'sheet-secret', lockFails = false } = {}) {
+function makeEnv({ secret = 'sheet-secret', lockFails = false, props = {}, files = [], stubs = {} } = {}) {
   const sheets = new Map();
   const locks = { held: 0, max: 0, released: 0 };
   function makeSheet(name) {
@@ -31,7 +31,7 @@ function makeEnv({ secret = 'sheet-secret', lockFails = false } = {}) {
   const ctx = {
     console: { error() {} },
     SpreadsheetApp: { getActiveSpreadsheet: () => ss },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => (k === 'SHEETS_SECRET' ? secret : null) }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => (k === 'SHEETS_SECRET' ? secret : (props[k] ?? null)) }) },
     LockService: {
       getScriptLock: () => ({
         waitLock: () => { if (lockFails) throw new Error('timeout'); locks.held++; locks.max = Math.max(locks.max, locks.held); },
@@ -39,14 +39,16 @@ function makeEnv({ secret = 'sheet-secret', lockFails = false } = {}) {
       }),
     },
     ContentService: {
-      MimeType: { JSON: 'application/json' },
+      MimeType: { JSON: 'application/json', TEXT: 'text/plain' },
       createTextOutput: (s) => ({ body: s, setMimeType(m) { this.mime = m; return this; } }),
     },
     Utilities: { formatDate: (d, tz, fmt) => `${tz}|${fmt}` },
     JSON, String, Object, Array, Date,
   };
+  Object.assign(ctx, stubs);
   vm.createContext(ctx);
   vm.runInContext(CODE, ctx);
+  for (const extra of files) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'google-sheets', extra), 'utf8'), ctx);
   const post = (body, query = {}) => {
     const out = ctx.doPost({ postData: { contents: typeof body === 'string' ? body : JSON.stringify(body) }, parameter: query });
     return { json: JSON.parse(out.body), mime: out.mime };
@@ -72,7 +74,7 @@ test('request → "Requests" sheet with headers, frozen bold header, IST timesta
   assert.deepEqual(r.json, { success: true, say: 'Thank you. I have noted your details. Our hospital staff will call you back to confirm your appointment.' });
   const s = env.sheets.get('Requests');
   assert.deepEqual(s.rows[0], ['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time',
-    'Reason', 'New/Existing', 'Language', 'Caller number', 'Call ID', 'Source', 'Status']);
+    'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status']);
   assert.equal(s.frozen, 1);
   assert.equal(s.boldHeader, true);
   assert.deepEqual(s.rows[1], ['Asia/Kolkata|yyyy-MM-dd HH:mm:ss', 'Ravi Kumar', '9876543210', 'Mr. Vijul – Orthopaedic', '2026-10-12',
@@ -117,7 +119,7 @@ test('OmniDimension post-call payload → "Call Log" (defensive field reading, s
   const r = env.post(payload, { key: 'sheet-secret' });
   assert.deepEqual(r.json, { success: true });
   const s = env.sheets.get('Call Log');
-  assert.deepEqual(s.rows[0], ['Timestamp', 'Caller number', 'Call ID', 'Duration', 'Summary', 'Outcome/disposition', 'Full transcript', 'Raw JSON']);
+  assert.deepEqual(s.rows[0], ['Timestamp', 'Caller number', 'Call ID', 'Duration', 'Summary', 'Outcome', 'Transcript', 'Raw JSON']);
   const row = s.rows[1];
   assert.equal(row[1], '9876543210');
   assert.equal(row[2], 'omni-77');
@@ -162,4 +164,35 @@ test('lock: busy lock returns a retry message and writes nothing', () => {
   const env = makeEnv({ lockFails: true });
   assert.deepEqual(env.post(REQUEST).json, { success: false, message: 'Busy, please retry' });
   assert.equal(env.sheets.size, 0);
+});
+
+test('doGet: Meta webhook verification returns hub.challenge only with the right verify token', () => {
+  const env = makeEnv({ props: { WA_VERIFY_TOKEN: 'verify-me' } });
+  const ok = env.ctx.doGet({ parameter: { 'hub.mode': 'subscribe', 'hub.verify_token': 'verify-me', 'hub.challenge': '12345' } });
+  assert.equal(ok.body, '12345');
+  assert.equal(ok.mime, 'text/plain');
+  const bad = env.ctx.doGet({ parameter: { 'hub.mode': 'subscribe', 'hub.verify_token': 'nope', 'hub.challenge': '12345' } });
+  assert.equal(bad.body, 'Forbidden');
+  const unset = makeEnv().ctx.doGet({ parameter: { 'hub.mode': 'subscribe', 'hub.verify_token': '', 'hub.challenge': '1' } });
+  assert.equal(unset.body, 'Forbidden');
+  assert.equal(env.ctx.doGet({ parameter: {} }).body, '{"ok":true}');
+});
+
+test('WhatsApp payloads are routed to handleWhatsApp without SHEETS_SECRET and always answered {"ok":true}', () => {
+  const seen = [];
+  const env = makeEnv({ stubs: { handleWhatsApp: (b) => seen.push(b), logWaError_: () => {} } });
+  const r = env.post({ object: 'whatsapp_business_account', entry: [] });
+  assert.deepEqual(r.json, { ok: true });
+  assert.equal(seen.length, 1);
+  assert.equal(env.sheets.size, 0, 'not treated as a call log');
+  // a crash inside the handler is swallowed (Meta still gets 200)
+  const env2 = makeEnv({ stubs: { handleWhatsApp: () => { throw new Error('boom'); }, logWaError_: () => {} } });
+  assert.deepEqual(env2.post({ object: 'whatsapp_business_account' }).json, { ok: true });
+});
+
+test('setupSheets creates all four sheets with headers', () => {
+  const env = makeEnv();
+  env.ctx.setupSheets();
+  assert.deepEqual([...env.sheets.keys()].sort(), ['Call Log', 'Requests', 'WA Errors', 'WA Sessions']);
+  assert.deepEqual(env.sheets.get('WA Sessions').rows[0], ['WhatsApp number', 'Step', 'Data (JSON)', 'Updated']);
 });

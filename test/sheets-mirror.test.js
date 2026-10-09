@@ -37,27 +37,27 @@ const booking = (o = {}) => ({
 const settle = () => new Promise((r) => setTimeout(r, 50));
 const origErr = console.error;
 
-test('successful voice booking is copied to the Sheet as "AI call – booked" / "Booked"', async () => {
+test('successful voice booking is copied to the Sheet as "AI call – booked" / "Booked" (LMH number in Reason)', async () => {
   const r = await tool('book-appointment', booking());
   assert.equal(r.status, 'booked');
   await settle();
   assert.equal(sent.length, 1);
   assert.deepEqual(sent[0], {
     secret: 'sheets-test-secret', type: 'request', patient_name: 'Ravi Kumar', mobile: '9876543210',
-    doctor: 'Mr. Vijul – Orthopaedic', preferred_date: H.THU, preferred_time: '10:30', reason: 'Knee pain',
+    doctor: 'Mr. Vijul – Orthopaedic', preferred_date: H.THU, preferred_time: '10:30', reason: 'Knee pain · Appointment LMH-0001',
     patient_type: 'new', language: 'ta', from_number: '', call_sid: 'call-9',
-    source: 'AI call – booked (LMH-0001)', status: 'Booked',
+    source: 'AI call – booked', status: 'Booked',
   });
 });
 
-test('staff_callback is copied as "Callback requested"', async () => {
+test('staff_callback is copied as "AI call – callback" / "Callback"', async () => {
   const r = await tool('staff-callback', { patient_name: 'Anitha', mobile: '9123456789', reason: 'Billing question', language: 'en', call_id: 'c-2' });
   assert.equal(r.status, 'callback_logged');
   await settle();
   assert.equal(sent.length, 1);
   assert.equal(sent[0].type, 'request');
-  assert.equal(sent[0].source, 'AI call – staff callback');
-  assert.equal(sent[0].status, 'Callback requested');
+  assert.equal(sent[0].source, 'AI call – callback');
+  assert.equal(sent[0].status, 'Callback');
   assert.equal(sent[0].reason, 'Billing question');
 });
 
