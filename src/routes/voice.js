@@ -20,6 +20,7 @@ const doctors = require('../services/doctors');
 const availability = require('../services/availability');
 const appointments = require('../services/appointments');
 const { notify } = require('../services/notifications');
+const sheets = require('../services/sheets');
 const config = require('../config');
 const { voiceCors, requireWebhookSecret, requirePostCallSecret, rateLimit } = require('../middleware/security');
 
@@ -194,6 +195,8 @@ router.post('/api/voice/book-appointment', wrap(async (req, res) => {
   const r = await appointments.book(a, { source: 'ai_voice', actor: 'omnidimension', callId });
   if (r.ok) {
     const x = r.appointment;
+    // Optional Google Sheet copy – not awaited, can never delay or fail the booking.
+    sheets.mirrorBooking(x, { callId, callerNumber: a.from_number || a.caller_number || null });
     const spokenNo = x.appointment_no.replace('-', ' ').split('').join(' ').replace(/\s+/g, ' ');
     const sayText = `Your appointment is confirmed. Your appointment number is ${x.appointment_no}. ${x.patient_name} with ${x.doctor_name} on ${clock.prettyDate(x.appointment_date)} at ${clock.prettyTime(x.appointment_time)}. Please arrive 10 minutes early.`;
     return res.json({
@@ -277,6 +280,7 @@ router.post('/api/voice/staff-callback', wrap(async (req, res) => {
     [name, mobile, reason, lang, 'ai_voice', 'open', clock.nowIST().stamp],
   );
   await notify('staff_attention', null, { patient_name: name, mobile, reason, source: 'AI voice call' }, { patient: false });
+  sheets.mirrorCallback({ patient_name: name, mobile, reason, language: lang, callId: a.call_id ? String(a.call_id).slice(0, 100) : null }); // not awaited
   res.json({ success: true, status: 'callback_logged', message: 'Callback request saved for the hospital team. Tell the caller the team will call them back.' });
 }));
 

@@ -71,6 +71,36 @@ URL `<PUBLIC_URL>/api/voice/staff-callback` · params: `reason` (required), `pat
 ### 7. `list_doctors`
 URL `<PUBLIC_URL>/api/voice/doctors` · no parameters.
 
+### 8. `save_request` – always-on fallback (Google Sheets)
+
+This is **tool #5 in your OmniDimension list** (after list_doctors, check_availability, book_appointment and staff_callback).
+
+It runs in Google's cloud (`google-sheets/Code.gs`, set up with `google-sheets/SETUP.md`), so it works **even when the hospital PC is off**. The agent uses it only when the booking tools fail (see `offline-section.md`). It saves a *request*, never a booking.
+
+- **URL:** `<APPS_SCRIPT_EXEC_URL>` (the Google web-app link ending in `/exec`, not the tunnel)
+- **Method:** `POST`
+- **Headers:** `Content-Type` = `application/json`. Google can't read other headers, so no `X-Webhook-Secret` here.
+- **Description:** *Saves the caller's details for the hospital staff to call back, when the booking system is unavailable. Does not book an appointment.*
+
+| Name | Type | Required | AI Generated | Value / description |
+|---|---|---|---|---|
+| secret | string | yes | **OFF – fixed value** | your `SHEETS_SECRET` |
+| type | string | yes | **OFF – fixed value** | `request` |
+| patient_name | string | yes | ON | Patient's full name |
+| mobile | string | yes | ON | Patient's 10-digit mobile number |
+| doctor | string | yes | ON | Doctor or department wanted (Mr. Vijul – Orthopaedic, Mr. Vishwa – Diabetologist, Ms. Nivi – Heart Specialist) |
+| preferred_date | string | no | ON | Preferred date (YYYY-MM-DD if possible) |
+| preferred_time | string | no | ON | Preferred time or morning/evening |
+| reason | string | no | ON | Short reason for visit |
+| patient_type | string | no | ON | new or existing |
+| language | string | no | ON | Language of the call: Tamil, English or Hindi |
+
+**secret and type must not be invented by the AI.** If OmniDimension lets you set a fixed/default value for a parameter, set `secret` = your SHEETS_SECRET and `type` = `request`, and turn **AI Generated OFF** for both. If it only allows AI-generated parameters, add them as inputs, put the fixed values in their description ("Always send exactly: request"), and use those values in **Test API**. Never put the secret in the agent's instructions or prompt.
+
+Response: `{"success":true,"say":"Thank you. I have noted your details. Our hospital staff will call you back to confirm your appointment."}`, or `{"success":false}` if the secret is wrong.
+
+> Google answers through a redirect. If **Test API** shows an empty response or an HTML page instead of the JSON above, OmniDimension isn't following the redirect. Tell me and we'll handle it.
+
 `{{SEND_CONFIRMATION_TOOL}}` is not needed: after every booking the backend itself passes the appointment to the notification service (WhatsApp is connected in a later step).
 
 ## C. Responses the agent receives
@@ -84,13 +114,19 @@ Always HTTP 200 JSON:
 
 ## D. Post-call webhook (agent → Post-Call tab)
 
+**Recommended: send it to Google Sheets, so every call is logged even when the PC is off.**
+
 | Setting | Value |
 |---|---|
 | Delivery Method | Webhook |
-| Webhook URL | `<PUBLIC_URL>/api/voice/call-ended?key=<OMNIDIM_POSTCALL_SECRET>` |
-| Payload | Standard JSON, with **Extracted Variables** enabled. Summary / Full Conversation are not needed: the backend ignores and never stores them. |
+| Webhook URL | `<APPS_SCRIPT_EXEC_URL>?key=<SHEETS_SECRET>` |
+| Payload | Standard JSON, with **Summary**, **Extracted Variables** and **Full Conversation** enabled (they go into the **Call Log** sheet) |
 
-Use **Test Connection** to check it works.
+Use **Test Connection**, then check a new row appears in **Call Log**.
+
+The **Call Log** stores full transcripts. Share that Google Sheet only with staff who need it.
+
+*Alternative (only while the PC is on):* `<PUBLIC_URL>/api/voice/call-ended?key=<OMNIDIM_POSTCALL_SECRET>` stores structured fields in MySQL instead (no transcripts) and shows them in Admin → *AI voice calls*. It stops working whenever the PC or tunnel is off. If OmniDimension allows only one post-call webhook, use the Google Sheets URL above.
 
 **Extracted variables** (define these in the agent's post-call / extraction settings):
 

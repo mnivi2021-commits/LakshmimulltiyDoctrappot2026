@@ -92,6 +92,12 @@ const config = {
     agentId: env.OMNIDIM_AGENT_ID || '',
   },
 
+  // Optional Google Sheets mirror (google-sheets/Code.gs web app)
+  sheets: {
+    webhookUrl: env.SHEETS_WEBHOOK_URL || '',
+    secret: env.SHEETS_SECRET || '',
+  },
+
   admin: {
     username: env.ADMIN_USERNAME || 'admin',
     password: env.ADMIN_PASSWORD || '',
