@@ -247,9 +247,15 @@
   function renderVoice() {
     api('GET', '/api/admin/voice-calls').then(function (r) {
       var rows = r.calls || [];
-      document.getElementById('panel').innerHTML = '<p class="muted">AI voice bookings are in Appointments → “AI voice bookings”. Below: post-call logs sent by OmniDimension.</p>' +
-        (rows.length ? '<div class="table-wrap"><table class="adm-table"><tr><th>When</th><th>Caller</th><th>Lang</th><th>Outcome</th><th>Appt</th><th>Summary</th></tr>' +
-          rows.map(function (c) { return '<tr><td>' + esc(c.created_at) + '</td><td>' + esc(c.caller_mobile) + '</td><td>' + esc(c.language) + '</td><td>' + esc(c.outcome) + '</td><td>' + esc(c.appointment_no) + '</td><td><small>' + esc(c.summary) + '</small></td></tr>'; }).join('') + '</table></div>' : '<p class="card muted">No call logs received yet.</p>');
+      document.getElementById('panel').innerHTML = '<p class="muted">AI voice bookings are in Appointments → “AI voice bookings”. Below: structured post-call data from OmniDimension (no transcripts are stored). “verified” = matches the appointment in the hospital database.</p>' +
+        (rows.length ? '<div class="table-wrap"><table class="adm-table"><tr><th>When</th><th>Call</th><th>Patient</th><th>Doctor</th><th>Appointment</th><th>Status</th><th>Reason</th></tr>' +
+          rows.map(function (c) {
+            var badge = Number(c.verified) ? ' <span class="badge confirmed">verified</span>' : (c.appointment_no ? ' <span class="badge cancelled">not verified</span>' : '');
+            return '<tr><td>' + esc(c.created_at) + '</td><td>' + esc(c.caller_mobile) + '<br><small>' + esc(c.language || '') + ' · ' + esc(c.call_id || '') + '</small></td>' +
+              '<td>' + esc(c.patient_name) + '</td><td>' + esc(c.doctor) + '<br><small>' + esc(c.department) + '</small></td>' +
+              '<td><b>' + esc(c.appointment_no) + '</b><br><small>' + esc(c.appointment_date) + ' ' + t12(c.appointment_time) + '</small></td>' +
+              '<td>' + esc(c.appointment_status) + badge + '</td><td><small>' + esc(c.reason) + '</small></td></tr>';
+          }).join('') + '</table></div>' : '<p class="card muted">No call logs received yet.</p>');
     });
   }
   function renderRequests() {

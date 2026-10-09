@@ -14,6 +14,19 @@ function int(v, def) {
   return Number.isFinite(n) ? n : def;
 }
 
+function parseDatabaseUrl(url) {
+  if (!url) return {};
+  try {
+    const u = new URL(url);
+    if (!/^mysql2?:$/.test(u.protocol)) return {};
+    return {
+      host: u.hostname, port: u.port || undefined, database: decodeURIComponent(u.pathname.slice(1)) || undefined,
+      user: decodeURIComponent(u.username), password: decodeURIComponent(u.password),
+    };
+  } catch { return {}; }
+}
+const dbUrl = parseDatabaseUrl(env.DATABASE_URL);
+
 const config = {
   env: env.NODE_ENV || 'development',
   isProduction: env.NODE_ENV === 'production',
@@ -30,13 +43,15 @@ const config = {
     mapsUrl: env.HOSPITAL_MAPS_URL || 'https://www.google.com/maps/search/?api=1&query=Lakshmi+Multispecialty+Hospital+Viruthunagar',
   },
 
+  // DATABASE_URL (mysql://user:pass@host:port/db) wins over the individual
+  // DB_* values. DB_DATABASE / DB_USERNAME are older aliases of DB_NAME / DB_USER.
   db: {
-    client: (env.DB_CLIENT || 'mysql').toLowerCase(), // 'mysql' | 'sqlite'
-    host: env.DB_HOST || '127.0.0.1',
-    port: int(env.DB_PORT, 3306),
-    database: env.DB_DATABASE || 'lakshmi_hospital',
-    user: env.DB_USERNAME || '',
-    password: env.DB_PASSWORD || '',
+    client: (env.DB_CLIENT || 'mysql').toLowerCase(), // 'mysql' (production) | 'sqlite' (tests/trials)
+    host: dbUrl.host || env.DB_HOST || '127.0.0.1',
+    port: int(dbUrl.port || env.DB_PORT, 3306),
+    database: dbUrl.database || env.DB_NAME || env.DB_DATABASE || 'lakshmi_hospital',
+    user: dbUrl.user ?? (env.DB_USER || env.DB_USERNAME || ''),
+    password: dbUrl.password ?? (env.DB_PASSWORD || ''),
     ssl: bool(env.DB_SSL, false),
     sslRejectUnauthorized: bool(env.DB_SSL_REJECT_UNAUTHORIZED, true),
     sslCa: env.DB_SSL_CA ? env.DB_SSL_CA.replace(/\\n/g, '\n') : '', // PEM with literal \n allowed
@@ -69,6 +84,10 @@ const config = {
   omnidim: {
     webhookSecret: env.OMNIDIM_WEBHOOK_SECRET || '',
     allowQuerySecret: bool(env.OMNIDIM_ALLOW_QUERY_SECRET, false),
+    // Separate secret for the post-call webhook (it may only support a URL ?key=).
+    postCallSecret: env.OMNIDIM_POSTCALL_SECRET || '',
+    // Extra exact browser origins allowed to call /api/voice/* (https://*.omnidim.io is always allowed)
+    allowedOrigins: (env.OMNIDIM_ALLOWED_ORIGINS || '').split(',').map((s) => s.trim().replace(/\/$/, '')).filter(Boolean),
     apiKey: env.OMNIDIM_API_KEY || '',
     agentId: env.OMNIDIM_AGENT_ID || '',
   },

@@ -135,7 +135,7 @@ router.post('/api/admin/notifications/:id/retry', wrap(async (req, res) => {
 }));
 
 router.get('/api/admin/voice-calls', wrap(async (req, res) => {
-  res.json({ success: true, calls: await db().all('SELECT id, call_id, caller_mobile, language, summary, outcome, appointment_no, created_at FROM voice_calls ORDER BY id DESC LIMIT 100') });
+  res.json({ success: true, calls: await db().all('SELECT id, call_id, caller_mobile, language, patient_name, doctor, department, appointment_date, appointment_time, session, reason, appointment_no, appointment_status, verified, created_at FROM voice_calls ORDER BY id DESC LIMIT 100') });
 }));
 router.get('/api/admin/staff-requests', wrap(async (req, res) => {
   res.json({ success: true, requests: await db().all('SELECT * FROM staff_requests ORDER BY (status = \'open\') DESC, id DESC LIMIT 100') });

@@ -1,76 +1,120 @@
-# OmniDimension → Hospital backend: tool / action mapping
+# OmniDimension dashboard configuration – Lakshmi Multispecialty Hospital
 
-Create one **custom API action (webhook / integration)** in OmniDimension per row. All share:
+The prompt pack defines tool *placeholders* only (`{{CHECK_AVAILABILITY_TOOL}}` …) and says to map them to your own webhooks. They map to this backend's existing `/api/voice/*` endpoints, which use the **same appointment service and MySQL database** as the website, AI chat and admin dashboard.
+
+`<PUBLIC_URL>` = the public HTTPS address of this backend (a tunnel to your PC for the first test – see README "First real test call" – or your production domain). `localhost` cannot be reached by OmniDimension.
+
+## A. Agent
+
+| Setting | Value |
+|---|---|
+| Call type / direction | **Incoming** (unchanged) |
+| Phone number | your existing OmniDimension number (unchanged) |
+| Languages | Tamil, English, Hindi |
+| Welcome message | `Welcome to Lakshmi Multispecialty Hospital. How can I help you?` |
+| Instructions | contents of `agent-prompt.md` (below the line) |
+
+## B. Custom API integrations (Integrations → Custom API)
+
+Common to every integration:
 
 - **Method:** `POST`
-- **Base URL:** `https://<your-deployed-domain>` (for example your Vercel URL). A local `localhost` URL will NOT work — OmniDimension must reach the server over the internet.
 - **Headers:**
-  - `Content-Type: application/json`
-  - `X-Webhook-Secret: <value of OMNIDIM_WEBHOOK_SECRET in your .env>`
-    (or `Authorization: Bearer <same value>`)
-- **Body:** JSON with the parameters below. Flat JSON is preferred. Bodies wrapped as `{"parameters": {...}}`, `{"args": {...}}` or `{"data": {...}}` are also accepted.
-- **Response:** always HTTP 200 JSON with `success`, `status` and a plain-English `message`. The agent prompt tells the agent to relay `message` in the caller's language.
+  - `Content-Type` = `application/json`
+  - `X-Webhook-Secret` = value of `OMNIDIM_WEBHOOK_SECRET` from your `.env`
+- **All parameters:** Body parameters, **AI Generated = ON**.
 
-| Prompt-pack placeholder | Action name | Path |
-|---|---|---|
-| `{{CHECK_AVAILABILITY_TOOL}}` | `check_availability` | `/api/voice/check-availability` |
-| `{{CREATE_APPOINTMENT_TOOL}}` | `book_appointment` | `/api/voice/book-appointment` |
-| `{{FIND_APPOINTMENT_TOOL}}` | `find_appointment` | `/api/voice/find-appointment` |
-| `{{RESCHEDULE_APPOINTMENT_TOOL}}` | `reschedule_appointment` | `/api/voice/reschedule-appointment` |
-| `{{CANCEL_APPOINTMENT_TOOL}}` | `cancel_appointment` | `/api/voice/cancel-appointment` |
-| `{{CREATE_CALLBACK_TOOL}}` | `staff_callback` | `/api/voice/staff-callback` |
-| (doctor info) | `list_doctors` | `/api/voice/doctors` |
-| `{{SEND_CONFIRMATION_TOOL}}` | — | Not needed: the backend sends WhatsApp automatically after every booking / change. |
-| Post-call webhook | — | `/api/voice/call-ended` |
+After creating each one, use **Test → Test API**, then attach it to the agent: **agent edit page → Integrations tab → select from dropdown**.
 
-## Parameters
+### 1. `check_availability` → `{{CHECK_AVAILABILITY_TOOL}}`
+URL `<PUBLIC_URL>/api/voice/check-availability`
+Description: *Checks the hospital's real appointment availability. Read-only – never books. Call before offering or confirming any time.*
 
-### check_availability
-| name | type | required | description |
+| Name | Type | Required | Description |
 |---|---|---|---|
-| doctor | string | yes | "Vijul", "Vishwa", "Nivi", or department ("ortho", "diabetes", "heart") |
-| appointment_date | string | yes | `YYYY-MM-DD` (also accepts "today", "tomorrow", "நாளை", "kal") |
-| session | string | no | `morning` or `evening` |
-| appointment_time | string | no | `HH:MM` 24-hour (also "6:30 PM") |
+| doctor | string | yes | Doctor name or specialty the caller asked for (e.g. Vijul, Vishwa, Nivi, orthopaedic, diabetes, heart) |
+| appointment_date | string | yes | Date in YYYY-MM-DD (Asia/Kolkata) |
+| session | string | no | morning or evening |
+| appointment_time | string | no | Preferred time in 24-hour HH:MM |
 
-Returns `status`: `available` (with `slot`), `choose_time` (with `alternatives`), or `unavailable` (with `reason` and `alternatives`).
+### 2. `book_appointment` → `{{CREATE_APPOINTMENT_TOOL}}`
+URL `<PUBLIC_URL>/api/voice/book-appointment`
+Description: *Creates the appointment in the hospital system and returns the official LMH appointment number. Only call after reading back the details and the caller said yes.*
 
-### book_appointment
-| name | type | required |
-|---|---|---|
-| patient_name | string | yes |
-| mobile | string | yes – 10-digit Indian mobile |
-| doctor | string | yes |
-| department | string | no (derived from doctor) |
-| appointment_date | string | yes – `YYYY-MM-DD` |
-| appointment_time | string | yes – `HH:MM` 24-hour |
-| session | string | yes – `morning`/`evening` |
-| reason | string | yes |
-| patient_type | string | yes – `new`/`existing` |
-| language | string | no – `ta`/`en`/`hi` |
-| call_id | string | no – OmniDimension call id, stored for audit |
+| Name | Type | Required | Description |
+|---|---|---|---|
+| patient_name | string | yes | Patient's full name |
+| mobile | string | yes | Patient's 10-digit mobile number |
+| doctor | string | yes | Doctor name (Mr. Vijul, Mr. Vishwa or Ms. Nivi) |
+| department | string | no | Orthopaedic, Diabetologist or Heart Specialist |
+| appointment_date | string | yes | YYYY-MM-DD, exactly as returned by check_availability |
+| appointment_time | string | yes | HH:MM 24-hour, exactly as returned by check_availability |
+| session | string | yes | morning or evening |
+| reason | string | yes | Short reason for visit |
+| patient_type | string | yes | new or existing |
+| language | string | no | Caller's language: ta, en or hi |
+| call_id | string | no | Current call ID, if available |
+| patient_confirmed | boolean | yes | true ONLY if the caller said yes to "Would you like me to confirm this appointment?" |
 
-Returns `status`: `booked` (with `appointment_no`), `unavailable` (+ `alternatives`), `needs_info` (+ `missing`), `duplicate`, or `system_error`.
+### 3. `find_appointment` → `{{FIND_APPOINTMENT_TOOL}}`
+URL `<PUBLIC_URL>/api/voice/find-appointment` · params: `mobile` (string, required), `appointment_no` (string, optional).
 
-### find_appointment
-`mobile` (required), `appointment_no` (optional).
+### 4. `reschedule_appointment` → `{{RESCHEDULE_APPOINTMENT_TOOL}}`
+URL `<PUBLIC_URL>/api/voice/reschedule-appointment` · params: `appointment_no`, `mobile`, `new_date` (YYYY-MM-DD), `new_time` (HH:MM) – all required strings; `session` optional.
 
-### reschedule_appointment
-`appointment_no`, `mobile`, `new_date` (`YYYY-MM-DD`), `new_time` (`HH:MM`), `session` (optional).
+### 5. `cancel_appointment` → `{{CANCEL_APPOINTMENT_TOOL}}`
+URL `<PUBLIC_URL>/api/voice/cancel-appointment` · params: `appointment_no`, `mobile` (required), `reason` (optional).
 
-### cancel_appointment
-`appointment_no`, `mobile`, `reason` (optional).
+### 6. `staff_callback` → `{{CREATE_CALLBACK_TOOL}}`
+URL `<PUBLIC_URL>/api/voice/staff-callback` · params: `reason` (required), `patient_name`, `mobile`, `language` (optional).
 
-### staff_callback
-`patient_name`, `mobile`, `reason` (required), `language`.
+### 7. `list_doctors`
+URL `<PUBLIC_URL>/api/voice/doctors` · no parameters.
 
-### Post-call webhook – /api/voice/call-ended
-Point OmniDimension's post-call / end-of-call webhook here, with the same secret header. The backend stores `call_id`, caller number, language, summary, outcome and appointment number (from top-level or `extracted_variables` fields) for **Admin → AI voice calls**.
+`{{SEND_CONFIRMATION_TOOL}}` is not needed: after every booking the backend itself passes the appointment to the notification service (WhatsApp is connected in a later step).
 
-## Example
+## C. Responses the agent receives
+
+Always HTTP 200 JSON:
+- `success`
+- `status`, one of: `available` · `choose_time` · `unavailable` · `needs_info` · `unknown_doctor` · `needs_confirmation` · `booked` · `duplicate` · `system_error`
+- `say`: the exact sentence to speak (translated to the caller's language)
+- `message`: instructions for the agent
+- plus `slot` / `alternatives` / `appointment_no` where relevant
+
+## D. Post-call webhook (agent → Post-Call tab)
+
+| Setting | Value |
+|---|---|
+| Delivery Method | Webhook |
+| Webhook URL | `<PUBLIC_URL>/api/voice/call-ended?key=<OMNIDIM_POSTCALL_SECRET>` |
+| Payload | Standard JSON, with **Extracted Variables** enabled. Summary / Full Conversation are not needed: the backend ignores and never stores them. |
+
+Use **Test Connection** to check it works.
+
+**Extracted variables** (define these in the agent's post-call / extraction settings):
+
+| Variable | Description |
+|---|---|
+| patient_name | Patient's name |
+| mobile | Patient's 10-digit mobile number |
+| doctor | Doctor booked (Mr. Vijul / Mr. Vishwa / Ms. Nivi) |
+| department | Doctor's department |
+| appointment_date | Appointment date YYYY-MM-DD |
+| appointment_time | Appointment time HH:MM 24-hour |
+| session | morning or evening |
+| reason | Short reason for visit |
+| appointment_number | LMH appointment number returned by book_appointment, if any |
+| appointment_status | booked / not_booked / cancelled / rescheduled / callback_requested |
+| call_language | Language of the call: Tamil, English or Hindi |
+| call_id | The call ID |
+
+The backend checks every post-call record against the appointments table. If the appointment number and mobile/call ID match, the database values are stored and the row is marked **verified**. Admin → *AI voice calls* shows these records.
+
+## E. Example (what OmniDimension sends)
 
 ```bash
-curl -X POST https://<your-domain>/api/voice/check-availability \
-  -H "Content-Type: application/json" -H "X-Webhook-Secret: $OMNIDIM_WEBHOOK_SECRET" \
+curl -X POST <PUBLIC_URL>/api/voice/check-availability \
+  -H "Content-Type: application/json" -H "X-Webhook-Secret: <OMNIDIM_WEBHOOK_SECRET>" \
   -d '{"doctor":"Vijul","appointment_date":"2026-10-15","session":"morning","appointment_time":"10:30"}'
 ```

@@ -134,6 +134,31 @@ function ddl(dialect) {
   ];
 }
 
+// Additive column migrations for tables that already exist in a database.
+// Never drops or renames anything.
+const ADDED_COLUMNS = {
+  voice_calls: [
+    ['bot_id', 'VARCHAR(100) NULL'],
+    ['patient_name', 'VARCHAR(80) NULL'],
+    ['doctor', 'VARCHAR(80) NULL'],
+    ['department', 'VARCHAR(60) NULL'],
+    ['appointment_date', 'VARCHAR(10) NULL'],
+    ['appointment_time', 'VARCHAR(5) NULL'],
+    ['session', 'VARCHAR(10) NULL'],
+    ['reason', 'VARCHAR(300) NULL'],
+    ['appointment_status', 'VARCHAR(20) NULL'],
+    ['verified', 'TINYINT NOT NULL DEFAULT 0'],
+  ],
+};
+
+async function columnsOf(conn, table) {
+  if (conn.dialect === 'mysql') {
+    const rows = await conn.all('SELECT COLUMN_NAME AS name FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?', [table]);
+    return new Set(rows.map((r) => r.name));
+  }
+  return new Set((await conn.all(`PRAGMA table_info(${table})`)).map((r) => r.name));
+}
+
 async function migrate(conn) {
   for (const stmt of ddl(conn.dialect)) {
     try {
@@ -142,6 +167,12 @@ async function migrate(conn) {
       // MySQL has no CREATE INDEX IF NOT EXISTS — ignore "duplicate key name".
       if (e.code === 'ER_DUP_KEYNAME') continue;
       throw e;
+    }
+  }
+  for (const [table, cols] of Object.entries(ADDED_COLUMNS)) {
+    const have = await columnsOf(conn, table);
+    for (const [name, type] of cols) {
+      if (!have.has(name)) await conn.run(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`);
     }
   }
 }

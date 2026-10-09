@@ -38,13 +38,50 @@ function safeEqual(a, b) {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
 
+// ---- CORS for the OmniDimension dashboard ("Test API" runs in the browser) ----
+// Only HTTPS pages on omnidim.io (or its subdomains), plus any exact origins in
+// OMNIDIM_ALLOWED_ORIGINS, may call /api/voice/* from a browser. CORS is not
+// authentication: every real request still needs X-Webhook-Secret.
+const OMNIDIM_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)*omnidim\.io$/i;
+
+function isAllowedVoiceOrigin(origin) {
+  if (!origin) return false;
+  return OMNIDIM_ORIGIN_RE.test(origin) || config.omnidim.allowedOrigins.includes(origin);
+}
+
+function voiceCors(req, res, next) {
+  const origin = req.get('origin');
+  const allowed = isAllowedVoiceOrigin(origin);
+  res.append('Vary', 'Origin');
+  if (allowed) res.setHeader('Access-Control-Allow-Origin', origin);
+  if (req.method === 'OPTIONS') {
+    if (!allowed) return res.status(403).json({ success: false, message: 'Origin not allowed' });
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Webhook-Secret');
+    res.setHeader('Access-Control-Max-Age', '600');
+    return res.status(204).end(); // preflight carries no secret by design; no data is returned
+  }
+  next();
+}
+
 /** OmniDimension → backend: shared secret in X-Webhook-Secret or Authorization: Bearer. */
 function requireWebhookSecret(req, res, next) {
+  if (req.path === '/call-ended') return next(); // guarded by requirePostCallSecret
   const secret = config.omnidim.webhookSecret;
   if (!secret) return res.status(503).json({ success: false, message: 'Voice integration is not configured on the server.' });
   const auth = req.get('authorization') || '';
   const given = req.get('x-webhook-secret') || (auth.startsWith('Bearer ') ? auth.slice(7) : '') ||
     (config.omnidim.allowQuerySecret ? req.query.key : '');
+  if (!given || !safeEqual(given, secret)) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  next();
+}
+
+/** OmniDimension post-call webhook: header OR ?key= with OMNIDIM_POSTCALL_SECRET. */
+function requirePostCallSecret(req, res, next) {
+  const secret = config.omnidim.postCallSecret;
+  if (!secret) return res.status(503).json({ success: false, message: 'Post-call webhook is not configured on the server.' });
+  const auth = req.get('authorization') || '';
+  const given = req.get('x-webhook-secret') || (auth.startsWith('Bearer ') ? auth.slice(7) : '') || String(req.query.key || '');
   if (!given || !safeEqual(given, secret)) return res.status(401).json({ success: false, message: 'Unauthorized' });
   next();
 }
@@ -102,4 +139,4 @@ function requireAdminApi(req, res, next) {
   next();
 }
 
-module.exports = { securityHeaders, rateLimit, requireWebhookSecret, login, logout, currentAdmin, requireAdminApi, adminConfigured, safeEqual };
+module.exports = { securityHeaders, rateLimit, voiceCors, isAllowedVoiceOrigin, requireWebhookSecret, requirePostCallSecret, login, logout, currentAdmin, requireAdminApi, adminConfigured, safeEqual };

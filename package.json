@@ -13,7 +13,9 @@
     "dev": "node --watch server.js",
     "db:setup": "node src/db/setup.js",
     "reminders": "node src/jobs/run-reminders.js",
-    "test": "node --test --test-concurrency=1 \"test/**/*.test.js\""
+    "test": "node --test --test-concurrency=1 \"test/**/*.test.js\"",
+    "test:mysql": "node scripts/test-mysql.js",
+    "db:check": "node scripts/db-check.js"
   },
   "dependencies": {
     "dotenv": "^18.0.6",

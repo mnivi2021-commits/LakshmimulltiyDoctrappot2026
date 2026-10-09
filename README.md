@@ -72,7 +72,7 @@ GRANT ALL PRIVILEGES ON lakshmi_hospital.* TO 'lmh_app'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Put those values in `.env` (`DB_USERNAME=lmh_app`, `DB_PASSWORD=…`), then:
+Put those values in `.env` (`DB_USER=lmh_app`, `DB_PASSWORD=…`), then:
 
 ```powershell
 npm run db:setup     # creates tables, the 3 doctors, their sessions, the LMH counter (safe to re-run)
@@ -85,7 +85,7 @@ npm start            # http://localhost:3000   admin: http://localhost:3000/admi
 
 | Variable | Purpose |
 |---|---|
-| `DB_CLIENT`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | MySQL connection |
+| `DB_CLIENT`, `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | MySQL connection (XAMPP: root, empty password) |
 | `DB_SSL`, `DB_SSL_CA` | needed for most cloud MySQL providers (Vercel) |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | admin login |
 | `SESSION_SECRET` | 32+ random characters; signs admin + chat sessions |

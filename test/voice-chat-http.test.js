@@ -15,6 +15,12 @@ test.beforeEach(async () => { await H.freshDb(); H.setIST(H.WED, '09:00'); H.fai
 
 const SECRET = { 'Content-Type': 'application/json', 'X-Webhook-Secret': 'test-webhook-secret' };
 async function voice(path, body, headers = SECRET) {
+  // These tests model a caller who has already said "yes" to the read-back;
+  // the confirmation step itself is covered in omnidimension.test.js.
+  if (path === 'book-appointment') {
+    const target = body.parameters || body;
+    if (target.patient_confirmed === undefined) target.patient_confirmed = true;
+  }
   const r = await fetch(`${base}/api/voice/${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
   return { status: r.status, ...(await r.json()) };
 }

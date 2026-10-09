@@ -17,7 +17,7 @@ async function ensureMysqlDatabase() {
 
 async function main() {
   if (config.db.client === 'mysql') {
-    if (!config.db.user) throw new Error('DB_USERNAME is not set in .env');
+    if (!config.db.user) throw new Error('DB_USER is not set in .env');
     await ensureMysqlDatabase();
   }
   const conn = init();
