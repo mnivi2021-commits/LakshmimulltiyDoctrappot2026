@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Copy of public/index.html for GitHub Pages (static: doctor list uses the built-in fallback). Re-copy after changing public/index.html. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lakshmi Multispecialty Hospital | Virudhunagar</title>
+<meta name="description" content="Lakshmi Multispecialty Hospital, Virudhunagar. Book your doctor's appointment with one call. Tamil, English and Hindi.">
+<meta name="theme-color" content="#0F4C45">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Madurai:wght@400;600;700&display=swap">
+<style>
+  :root {
+    --brand: #0F4C45; --brand-2: #16655c; --accent: #E8A317; --accent-ink: #2a1c00;
+    --mint: #F3F7F5; --ink: #1C2B29; --muted: #4c5e5b; --line: #d6e3df; --wa: #1FAF57; --danger: #b3261e;
+    --radius: 18px;
+    --font: "Hind Madurai", "Noto Sans Tamil", "Nirmala UI", Latha, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  html.big { font-size: 120%; }
+  body { margin: 0; font: 1.19rem/1.55 var(--font); color: var(--ink); background: var(--mint); padding-bottom: 96px; }
+  img, svg { display: block; }
+  a { color: var(--brand); }
+  h1, h2, h3 { line-height: 1.2; margin: 0 0 .4em; }
+  h1 { font-size: clamp(1.75rem, 6vw, 2.6rem); }
+  h2 { font-size: clamp(1.45rem, 4.8vw, 1.9rem); color: var(--brand); }
+  .ta { display: block; font-size: .82em; font-weight: 600; color: var(--muted); margin-top: .15em; }
+  .wrap { width: 100%; max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+  section { padding: 36px 0; }
+  :focus-visible { outline: 4px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 12px; top: 12px; z-index: 100; background: #fff; padding: 10px 14px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* Header */
+  header { background: #fff; border-bottom: 1px solid var(--line); }
+  .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); flex: 1 1 260px; min-width: 0; }
+  .brand svg { width: 48px; height: 48px; flex: none; }
+  .brand b { display: block; font-size: 1.05rem; line-height: 1.2; }
+  .brand small { display: block; font-size: .82rem; color: var(--muted); line-height: 1.3; }
+  .textsize { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 14px; border: 2px solid var(--brand); border-radius: 12px; background: #fff; color: var(--brand); font: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; }
+  .textsize b { font-size: 1.25rem; }
+  .textsize[aria-pressed="true"] { background: var(--brand); color: #fff; }
+  nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  nav a { display: inline-block; padding: 8px 2px; font-size: .95rem; font-weight: 600; text-decoration: none; color: var(--brand); min-height: 44px; line-height: 28px; }
+  nav a:hover { text-decoration: underline; }
+
+  /* Hero */
+  .hero { background: linear-gradient(160deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff; padding: 40px 0 46px; }
+  .hero h1 { color: #fff; }
+  .hero .ta { color: #d9efe9; }
+  .hero p.lead { font-size: 1.1rem; max-width: 640px; margin: 14px 0 0; color: #eaf6f2; }
+  .big-actions { display: flex; flex-wrap: wrap; gap: 26px 40px; margin-top: 30px; }
+  .round-action { display: flex; flex-direction: column; align-items: center; gap: 10px; text-decoration: none; color: inherit; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+  .round-action .disc { width: 104px; height: 104px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 8px 22px rgba(0,0,0,.25); transition: transform .15s ease; }
+  .round-action .disc svg { width: 50px; height: 50px; }
+  .round-action:hover .disc { transform: scale(1.05); }
+  .round-action .lbl { font-weight: 700; font-size: 1.08rem; text-align: center; line-height: 1.25; }
+  .round-action .lbl small { display: block; font-weight: 600; font-size: .9rem; opacity: .9; }
+  .disc.call { background: var(--accent); color: var(--accent-ink); }
+  .disc.wa { background: var(--wa); color: #fff; }
+  .langs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .langs span { border: 1.5px solid rgba(255,255,255,.55); border-radius: 999px; padding: 4px 14px; font-weight: 600; font-size: .95rem; }
+
+  /* Steps */
+  .steps { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 14px; counter-reset: s; }
+  .steps li { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 18px 18px 74px; position: relative; counter-increment: s; }
+  .steps li::before { content: counter(s); position: absolute; left: 18px; top: 18px; width: 40px; height: 40px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 1.15rem; }
+  .steps b { display: block; font-size: 1.1rem; }
+  .steps span { color: var(--muted); }
+  .steps code { font: inherit; font-weight: 700; color: var(--brand); white-space: nowrap; }
+  @media (min-width: 760px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+
+  /* Doctors */
+  .doctors { display: grid; gap: 16px; margin-top: 18px; }
+  @media (min-width: 760px) { .doctors { grid-template-columns: repeat(3, 1fr); } }
+  .doc { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 4px; }
+  .doc .dept { color: var(--brand); font-weight: 700; font-size: .95rem; text-transform: uppercase; letter-spacing: .03em; }
+  .doc .dept-ta { color: var(--muted); font-weight: 600; font-size: .9rem; }
+  .doc h3 { font-size: 1.4rem; margin: 6px 0 0; }
+  .doc .qual { color: var(--muted); margin: 0 0 12px; }
+  .doc button { margin-top: auto; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 12px 22px; border-radius: 14px; border: 2px solid var(--brand); background: #fff; color: var(--brand); font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; text-decoration: none; width: 100%; text-align: center; line-height: 1.25; }
+  .btn:hover { background: #e9f2ef; }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:hover { background: var(--brand-2); }
+  .btn-wa { background: var(--wa); border-color: var(--wa); color: #fff; }
+  .btn-wa:hover { background: #189a4b; }
+  .btn svg { width: 26px; height: 26px; flex: none; }
+
+  /* Form */
+  form { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-top: 18px; max-width: 680px; }
+  .field { margin-bottom: 18px; }
+  label, legend { display: block; font-weight: 700; margin-bottom: 6px; }
+  label .ta, legend .ta { display: inline; font-size: .85em; margin-left: 6px; }
+  .opt { font-weight: 600; color: var(--muted); font-size: .9em; }
+  input, select, textarea { width: 100%; font: inherit; font-size: 1.05rem; color: var(--ink); padding: 12px 14px; min-height: 56px; border: 2px solid #b9cbc6; border-radius: 12px; background: #fff; }
+  textarea { min-height: 96px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { border-color: var(--brand); outline: 3px solid #cfe4de; }
+  input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--danger); }
+  .err { color: var(--danger); font-weight: 600; font-size: .95rem; margin-top: 6px; }
+  .err:empty { display: none; }
+  fieldset { border: 0; padding: 0; margin: 0 0 18px; }
+  .choices { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+  .choices label { display: flex; align-items: center; gap: 10px; border: 2px solid #b9cbc6; border-radius: 12px; padding: 12px; min-height: 56px; margin: 0; font-weight: 600; cursor: pointer; }
+  .choices input { width: 24px; height: 24px; min-height: 0; margin: 0; accent-color: var(--brand); flex: none; }
+  .choices label:has(input:checked) { border-color: var(--brand); background: #e9f2ef; }
+  .notice { background: #fff8e6; border: 1.5px solid #f0cf7a; border-radius: 12px; padding: 12px 14px; margin: 4px 0 16px; font-weight: 600; }
+  .status { margin-top: 14px; font-weight: 600; }
+  .status:empty { display: none; }
+  .status.info { background: #e9f2ef; border-radius: 12px; padding: 12px 14px; }
+  .status.warn { background: #fff8e6; border: 1.5px solid #f0cf7a; border-radius: 12px; padding: 12px 14px; }
+
+  /* Emergency */
+  .emergency { background: #fff; border: 3px solid var(--danger); border-radius: var(--radius); padding: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+  .emergency p { margin: 0; flex: 1 1 260px; font-size: 1.1rem; font-weight: 600; }
+  .emergency .ta { color: var(--danger); }
+  .emergency a { display: inline-flex; align-items: center; gap: 10px; background: var(--danger); color: #fff; text-decoration: none; font-weight: 700; font-size: 1.3rem; padding: 12px 24px; border-radius: 14px; min-height: 56px; }
+  .emergency a svg { width: 26px; height: 26px; }
+
+  /* Footer */
+  footer { background: var(--brand); color: #e6f2ef; padding: 30px 0 34px; margin-top: 10px; }
+  footer b { color: #fff; font-size: 1.1rem; }
+  .foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; }
+  .foot-actions { display: flex; gap: 22px; }
+  .foot-actions .disc { width: 64px; height: 64px; box-shadow: none; }
+  .foot-actions .disc svg { width: 32px; height: 32px; }
+  .foot-actions .lbl { font-size: .92rem; color: #fff; }
+
+  /* Floating buttons */
+  .float { position: fixed; right: 16px; bottom: 16px; z-index: 50; display: flex; flex-direction: column; gap: 14px; }
+  .float a, .float button { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 6px 18px rgba(0,0,0,.28); border: 0; cursor: pointer; text-decoration: none; padding: 0; }
+  .float svg { width: 32px; height: 32px; }
+  .float .f-call { background: var(--accent); color: var(--accent-ink); }
+  .float .f-wa { background: var(--wa); color: #fff; }
+
+  /* Toast */
+  .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); width: min(92vw, 520px); background: var(--ink); color: #fff; padding: 14px 18px; border-radius: 14px; font-weight: 600; z-index: 60; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+  .toast[hidden] { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .round-action .disc { transition: none; }
+    .round-action:hover .disc { transform: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- Icons (inline SVG, no external libraries) -->
+<svg width="0" height="0" class="sr" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path fill="currentColor" d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24 11.36 11.36 0 0 0 3.58.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.58a1 1 0 0 1-.25 1.01z"/></symbol>
+    <symbol id="i-wa" viewBox="0 0 32 32"><path fill="currentColor" d="M16.04 3C9.02 3 3.3 8.7 3.3 15.72c0 2.25.59 4.44 1.7 6.37L3.2 29l7.08-1.86a12.7 12.7 0 0 0 5.75 1.38h.01c7.02 0 12.74-5.7 12.74-12.73A12.66 12.66 0 0 0 16.04 3zm0 23.37h-.01a10.6 10.6 0 0 1-5.4-1.48l-.39-.23-4.2 1.1 1.12-4.1-.25-.42a10.5 10.5 0 0 1-1.62-5.6c0-5.84 4.76-10.6 10.62-10.6a10.56 10.56 0 0 1 10.6 10.6c0 5.85-4.76 10.6-10.6 10.6zm5.82-7.94c-.32-.16-1.89-.93-2.18-1.04-.3-.1-.5-.16-.72.16-.21.32-.82 1.04-1.01 1.25-.19.21-.37.24-.69.08-.32-.16-1.35-.5-2.57-1.59-.95-.85-1.59-1.9-1.78-2.21-.19-.32-.02-.5.14-.65.14-.14.32-.37.48-.56.16-.18.21-.32.32-.53.1-.21.05-.4-.03-.56-.08-.16-.72-1.73-.98-2.37-.26-.62-.53-.54-.72-.55h-.61c-.21 0-.56.08-.85.4-.29.32-1.12 1.09-1.12 2.66s1.14 3.09 1.3 3.3c.16.21 2.25 3.43 5.45 4.81.76.33 1.35.52 1.82.67.76.24 1.46.21 2.01.13.61-.09 1.89-.77 2.15-1.52.27-.74.27-1.38.19-1.51-.08-.13-.29-.21-.61-.37z"/></symbol>
+  </defs>
+</svg>
+
+<header>
+  <div class="wrap head">
+    <a class="brand" href="#top" id="top" aria-label="Lakshmi Multispecialty Hospital, home">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="13" fill="#0F4C45"/><path fill="#fff" d="M20 9h8v11h11v8H28v11h-8V28H9v-8h11z"/><circle cx="24" cy="24" r="3.4" fill="#E8A317"/></svg>
+      <span><b>Lakshmi Multispecialty Hospital</b><small lang="ta">லட்சுமி மல்டிஸ்பெஷாலிட்டி மருத்துவமனை</small><small>Virudhunagar, Tamil Nadu</small></span>
+    </a>
+    <button type="button" class="textsize" id="textSize" aria-pressed="false"><b aria-hidden="true">A+</b> Larger text <span lang="ta">பெரிய எழுத்து</span></button>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="#how">How to book</a></li>
+        <li><a href="#doctors">Doctors</a></li>
+        <li><a href="#request">Request form</a></li>
+        <li><a href="#emergency">Emergency</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <h1 id="hero-title">Book your doctor's appointment with one call
+        <span class="ta" lang="ta">ஒரே அழைப்பில் மருத்துவர் சந்திப்பை முன்பதிவு செய்யுங்கள்</span></h1>
+      <p class="lead">Tap the phone to call our receptionist, or chat with us on WhatsApp. Our receptionist speaks Tamil, English and Hindi.</p>
+      <div class="big-actions">
+        <a class="round-action js-call" href="#" aria-label="Call the hospital to book an appointment">
+          <span class="disc call"><svg aria-hidden="true"><use href="#i-phone"/></svg></span>
+          <span class="lbl">Call to book<small lang="ta">அழைக்க</small></span>
+        </a>
+        <a class="round-action js-wa" href="#" aria-label="Chat with the hospital on WhatsApp" rel="noopener">
+          <span class="disc wa"><svg aria-hidden="true"><use href="#i-wa"/></svg></span>
+          <span class="lbl">WhatsApp chat<small lang="ta">வாட்ஸ்அப்</small></span>
+        </a>
+      </div>
+      <div class="langs" aria-label="Languages spoken"><span lang="ta">தமிழ்</span><span>English</span><span lang="hi">हिंदी</span></div>
+    </div>
+  </section>
+
+  <section id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <h2 id="how-title">How phone booking works<span class="ta" lang="ta">தொலைபேசி முன்பதிவு எப்படி</span></h2>
+      <ol class="steps">
+        <li><b>Choose doctor &amp; time</b><span>Tell us which doctor you want to see and when.</span></li>
+        <li><b>We check free slots</b><span>We look at the doctor's real schedule and tell you what is free.</span></li>
+        <li><b>Confirm &amp; get your number</b><span>You get an appointment number like <code>LMH-0012</code>. Please keep it.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="doctors" aria-labelledby="doctors-title">
+    <div class="wrap">
+      <h2 id="doctors-title">Our doctors<span class="ta" lang="ta">எங்கள் மருத்துவர்கள்</span></h2>
+      <div class="doctors" id="doctorList" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="request" aria-labelledby="request-title">
+    <div class="wrap">
+      <h2 id="request-title">Appointment request<span class="ta" lang="ta">சந்திப்பு கோரிக்கை</span></h2>
+      <p>Fill this in and we will open WhatsApp with your details typed for you. Then just press send.</p>
+      <form id="requestForm" novalidate>
+        <p class="notice" role="note">This is a request, not a confirmed booking. Our staff will reply to confirm.<span class="ta" lang="ta">இது கோரிக்கை மட்டுமே; உறுதிசெய்யப்பட்ட முன்பதிவு அல்ல.</span></p>
+
+        <div class="field">
+          <label for="f-name">Patient name <span class="ta" lang="ta">நோயாளியின் பெயர்</span></label>
+          <input id="f-name" name="name" autocomplete="name" maxlength="80" required aria-describedby="e-name">
+          <div class="err" id="e-name"></div>
+        </div>
+
+        <div class="field">
+          <label for="f-mobile">Mobile number (10 digits) <span class="ta" lang="ta">மொபைல் எண்</span></label>
+          <input id="f-mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" required aria-describedby="e-mobile">
+          <div class="err" id="e-mobile"></div>
+        </div>
+
+        <div class="field">
+          <label for="f-doctor">Doctor <span class="ta" lang="ta">மருத்துவர்</span></label>
+          <select id="f-doctor" name="doctor" required aria-describedby="e-doctor"><option value="">Choose a doctor</option></select>
+          <div class="err" id="e-doctor"></div>
+        </div>
+
+        <div class="field">
+          <label for="f-date">Preferred date <span class="ta" lang="ta">தேதி</span></label>
+          <input id="f-date" name="date" type="date" required aria-describedby="e-date">
+          <div class="err" id="e-date"></div>
+        </div>
+
+        <div class="field">
+          <label for="f-time">Preferred time <span class="opt">(optional)</span> <span class="ta" lang="ta">நேரம்</span></label>
+          <input id="f-time" name="time" type="time">
+        </div>
+
+        <fieldset>
+          <legend>Have you visited before? <span class="ta" lang="ta">முன்பு வந்திருக்கிறீர்களா?</span></legend>
+          <div class="choices">
+            <label><input type="radio" name="visit" value="First visit" checked> First visit</label>
+            <label><input type="radio" name="visit" value="Visited before"> Visited before</label>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label for="f-reason">Reason for visit <span class="opt">(optional)</span> <span class="ta" lang="ta">காரணம்</span></label>
+          <textarea id="f-reason" name="reason" maxlength="300"></textarea>
+        </div>
+
+        <button class="btn btn-wa" type="submit"><svg aria-hidden="true"><use href="#i-wa"/></svg>Send request on WhatsApp</button>
+        <div class="status" id="formStatus" role="status" aria-live="polite"></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="emergency" aria-labelledby="emergency-title">
+    <div class="wrap">
+      <h2 id="emergency-title" class="sr">Emergency</h2>
+      <div class="emergency">
+        <p>Medical emergency? Call 108 or go to the nearest emergency department.
+          <span class="ta" lang="ta">அவசர நிலையா? 108 ஐ அழைக்கவும் அல்லது அருகிலுள்ள அவசர சிகிச்சைப் பிரிவுக்குச் செல்லவும்.</span></p>
+        <a href="tel:108" aria-label="Call 108 emergency ambulance"><svg aria-hidden="true"><use href="#i-phone"/></svg>108</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div><b>Lakshmi Multispecialty Hospital</b><br><span lang="ta">லட்சுமி மல்டிஸ்பெஷாலிட்டி மருத்துவமனை</span><br>Virudhunagar, Tamil Nadu</div>
+    <div class="foot-actions">
+      <a class="round-action js-call" href="#" aria-label="Call the hospital to book an appointment">
+        <span class="disc call"><svg aria-hidden="true"><use href="#i-phone"/></svg></span><span class="lbl">Call to book</span>
+      </a>
+      <a class="round-action js-wa" href="#" aria-label="Chat with the hospital on WhatsApp" rel="noopener">
+        <span class="disc wa"><svg aria-hidden="true"><use href="#i-wa"/></svg></span><span class="lbl">WhatsApp</span>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<div class="float" aria-label="Quick contact">
+  <a class="f-call js-call" href="#" aria-label="Call the hospital to book an appointment"><svg aria-hidden="true"><use href="#i-phone"/></svg></a>
+  <a class="f-wa js-wa" href="#" aria-label="Chat with the hospital on WhatsApp" rel="noopener"><svg aria-hidden="true"><use href="#i-wa"/></svg></a>
+</div>
+
+<div class="toast" id="toast" role="alert" hidden></div>
+
+<script>
+  // ===== EDIT THESE TWO NUMBERS =====
+  const CALL_NUMBER = "+919429390825";
+  const WHATSAPP_NUMBER = "919429390825";
+  // ==================================
+
+  (function () {
+    'use strict';
+
+    // Same doctors as src/db/seed.js – used only if /api/doctors cannot be reached.
+    const SEED_DOCTORS = [
+      { id: 1, name: 'Mr. Vijul', qualification: 'MBBS, MS', en: 'Orthopaedic', ta: 'எலும்பு மருத்துவம்' },
+      { id: 2, name: 'Mr. Vishwa', qualification: 'MBBS, MD', en: 'Diabetologist', ta: 'சர்க்கரை நோய் நிபுணர்' },
+      { id: 3, name: 'Ms. Nivi', qualification: 'MBBS, MS', en: 'Heart Specialist', ta: 'இதய நிபுணர்' },
+    ];
+
+    const waDigits = String(WHATSAPP_NUMBER).replace(/\D/g, '');
+    const WA_READY = /^\d{11,15}$/.test(waDigits) && !/X/i.test(WHATSAPP_NUMBER);
+    const callHref = 'tel:' + String(CALL_NUMBER).replace(/[^\d+]/g, '');
+    const WA_SOON = 'WhatsApp chat is coming soon – please use the call button.';
+
+    // ---- Larger text (remembered on this phone) ----
+    const sizeBtn = document.getElementById('textSize');
+    function applySize(big) {
+      document.documentElement.classList.toggle('big', big);
+      sizeBtn.setAttribute('aria-pressed', String(big));
+    }
+    let bigText = false;
+    try { bigText = localStorage.getItem('lmh_big_text') === '1'; } catch (e) { /* storage blocked */ }
+    applySize(bigText);
+    sizeBtn.addEventListener('click', function () {
+      bigText = !bigText;
+      applySize(bigText);
+      try { localStorage.setItem('lmh_big_text', bigText ? '1' : '0'); } catch (e) { /* ignore */ }
+    });
+
+    const toastEl = document.getElementById('toast');
+    let toastTimer;
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.hidden = false;
+      clearTimeout(toastTimer);
+      toastEl.tabIndex = -1;
+      toastTimer = setTimeout(function () { toastEl.hidden = true; }, 5000);
+    }
+
+    // Wire every call / WhatsApp button from the constants above (numbers are never shown as text).
+    document.querySelectorAll('.js-call').forEach(function (a) { a.href = callHref; });
+    document.querySelectorAll('.js-wa').forEach(function (a) {
+      if (WA_READY) {
+        a.href = 'https://wa.me/' + waDigits;
+        a.target = '_blank';
+      } else {
+        a.href = '#';
+        a.addEventListener('click', function (e) { e.preventDefault(); toast(WA_SOON); });
+      }
+    });
+
+    // ---- Doctors (real list from the hospital database) ----
+    const listEl = document.getElementById('doctorList');
+    const selectEl = document.getElementById('f-doctor');
+
+    function renderDoctors(doctors) {
+      listEl.textContent = '';
+      selectEl.querySelectorAll('option:not([value=""])').forEach(function (o) { o.remove(); });
+      doctors.forEach(function (d) {
+        const label = d.name + ' – ' + d.en;
+        const card = document.createElement('article');
+        card.className = 'doc';
+        const dept = document.createElement('div'); dept.className = 'dept'; dept.textContent = d.en;
+        const deptTa = document.createElement('div'); deptTa.className = 'dept-ta'; deptTa.lang = 'ta'; deptTa.textContent = d.ta || '';
+        const h = document.createElement('h3'); h.textContent = d.name;
+        const q = document.createElement('p'); q.className = 'qual'; q.textContent = d.qualification;
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn btn-primary';
+        b.textContent = 'Request appointment';
+        b.setAttribute('aria-label', 'Request appointment with ' + d.name + ', ' + d.en);
+        b.addEventListener('click', function () {
+          selectEl.value = label;
+          clearError('doctor');
+          document.getElementById('request').scrollIntoView();
+          document.getElementById('f-name').focus({ preventScroll: true });
+        });
+        card.append(dept, deptTa, h, q, b);
+        listEl.appendChild(card);
+
+        const opt = document.createElement('option');
+        opt.value = label; opt.textContent = label;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    renderDoctors(SEED_DOCTORS);
+    fetch('/api/doctors', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.doctors) || !data.doctors.length) return;
+        renderDoctors(data.doctors.map(function (d) {
+          return { id: d.id, name: d.name, qualification: d.qualification, en: (d.label && d.label.en) || d.department, ta: d.label && d.label.ta };
+        }));
+      })
+      .catch(function () { /* keep the seed list */ });
+
+    // ---- Form ----
+    const form = document.getElementById('requestForm');
+    const statusEl = document.getElementById('formStatus');
+    const dateEl = document.getElementById('f-date');
+
+    function todayLocal() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    dateEl.min = todayLocal();
+
+    function setError(field, msg) {
+      const input = form.elements[field];
+      document.getElementById('e-' + field).textContent = msg;
+      input.setAttribute('aria-invalid', 'true');
+    }
+    function clearError(field) {
+      const input = form.elements[field];
+      document.getElementById('e-' + field).textContent = '';
+      input.removeAttribute('aria-invalid');
+    }
+    ['name', 'mobile', 'doctor', 'date'].forEach(function (f) {
+      form.elements[f].addEventListener('input', function () { clearError(f); });
+    });
+    form.elements.mobile.addEventListener('input', function (e) {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+    });
+
+    function prettyDate(iso) {
+      const p = iso.split('-').map(Number);
+      const d = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+      return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    }
+    function prettyTime(hhmm) {
+      const p = hhmm.split(':').map(Number);
+      return (p[0] % 12 || 12) + ':' + String(p[1]).padStart(2, '0') + ' ' + (p[0] >= 12 ? 'PM' : 'AM');
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      statusEl.textContent = ''; statusEl.className = 'status';
+      const v = {
+        name: form.elements.name.value.trim().replace(/\s+/g, ' '),
+        mobile: form.elements.mobile.value.trim(),
+        doctor: form.elements.doctor.value,
+        date: form.elements.date.value,
+        time: form.elements.time.value,
+        visit: form.elements.visit.value,
+        reason: form.elements.reason.value.trim().replace(/\s+/g, ' '),
+      };
+      ['name', 'mobile', 'doctor', 'date'].forEach(clearError);
+      let firstBad = null;
+      const bad = function (f, msg) { setError(f, msg); if (!firstBad) firstBad = f; };
+      if (v.name.length < 2) bad('name', 'Please enter the patient’s name.');
+      if (!/^[6-9]\d{9}$/.test(v.mobile)) bad('mobile', 'Please enter a 10-digit mobile number starting with 6, 7, 8 or 9.');
+      if (!v.doctor) bad('doctor', 'Please choose a doctor.');
+      if (!v.date) bad('date', 'Please choose a date.');
+      else if (v.date < todayLocal()) bad('date', 'Please choose today or a later date.');
+      if (firstBad) { form.elements[firstBad].focus(); return; }
+
+      if (!WA_READY) {
+        statusEl.className = 'status warn';
+        statusEl.textContent = WA_SOON;
+        return;
+      }
+
+      const lines = [
+        'Appointment request – Lakshmi Multispecialty Hospital',
+        '',
+        'Patient: ' + v.name,
+        'Mobile: ' + v.mobile,
+        'Doctor: ' + v.doctor,
+        'Date: ' + prettyDate(v.date),
+        'Time: ' + (v.time ? prettyTime(v.time) : 'Any time'),
+        'Visit: ' + v.visit,
+      ];
+      if (v.reason) lines.push('Reason: ' + v.reason);
+      lines.push('', 'This is a request, not a confirmed booking.');
+
+      const url = 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(lines.join('\n'));
+      const win = window.open(url, '_blank', 'noopener');
+      if (!win) window.location.href = url;
+      statusEl.className = 'status info';
+      statusEl.textContent = 'WhatsApp is opening with your details. Press send there. This is a request, not a confirmed booking – our staff will reply to confirm.';
+    });
+  })();
+</script>
+</body>
+</html>
