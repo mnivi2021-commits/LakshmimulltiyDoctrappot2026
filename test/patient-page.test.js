@@ -62,9 +62,26 @@ test('docs/index.html (GitHub Pages / Vercel copy): chat box present, posts to W
   assert.match(html, /id="chatLog" role="log" aria-live="polite"/);
   assert.ok(html.includes('Chat with us') && html.includes('அரட்டை'));
   // posts to the Worker's /webchat route, with the honeypot field
-  assert.match(html, /var WEBCHAT_URL = 'https:\/\/lakshmi-sheets\.mnivi2021\.workers\.dev\/webchat';/);
+  assert.match(html, /const WEBCHAT_URL = "https:\/\/lakshmi-sheets\.mnivi2021\.workers\.dev\/webchat";/);
+  assert.equal((html.match(/WEBCHAT_URL =/g) || []).length, 1, 'one shared setting for form + chat');
   assert.match(html, /website: honeypot\.value \|\| ''/);
   assert.match(html, /name="website"/);
+  // the appointment form saves through the same Worker route (no WhatsApp)
+  assert.match(html, /fetch\(WEBCHAT_URL, \{\s*method: 'POST', headers: \{ 'Content-Type': 'text\/plain;charset=UTF-8' \}/);
+  assert.equal((html.match(/fetch\(WEBCHAT_URL/g) || []).length, 2, 'form and chat both post to /webchat');
+  assert.match(html, /Send request \/ <span lang="ta">கோரிக்கை அனுப்பு<\/span>/);
+  assert.match(html, /Fill this in and our staff will call you back to confirm\./);
+  // WhatsApp buttons → bot TEST number only (wa.me format, "Hi" pre-typed), marked as test mode
+  assert.match(html, /const WHATSAPP_URL = "https:\/\/wa\.me\/15556564409\?text=Hi";/);
+  assert.deepEqual([...new Set(html.match(/wa\.me\/\d+/g))], ['wa.me/15556564409'], 'only the bot test number is used for WhatsApp');
+  assert.ok(!/api\.whatsapp\.com/.test(html));
+  assert.ok((html.match(/class="round-action js-wa"/g) || []).length >= 2, 'WhatsApp buttons in hero and contact area');
+  assert.match(html, /WhatsApp chat is in test mode/);
+  assert.match(html, /\[wa, 'q-wa', t\('whatsapp'\), '#i-wa'\]/, 'chat failure fallback offers WhatsApp');
+  // the form never opens WhatsApp – it only posts to /webchat
+  const formCode = html.slice(html.indexOf("const form = document.getElementById('requestForm')"), html.indexOf('// ===== Website chat box'));
+  assert.ok(formCode.length > 1000 && !/wa\.me|WHATSAPP_URL|window\.open/.test(formCode), 'form code does not use WhatsApp');
+  assert.match(html, /class="[^"]*js-call/, 'Call button kept');
   // every inline script still parses
   for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new Function(code));
   // no phone number shown as visible text (108 allowed)

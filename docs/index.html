@@ -63,6 +63,7 @@
   .round-action .lbl small { display: block; font-weight: 600; font-size: .9rem; opacity: .9; }
   .disc.call { background: var(--accent); color: var(--accent-ink); }
   .disc.wa { background: var(--wa); color: #fff; }
+  .wa-note { display: block; font-size: .82rem; font-weight: 600; opacity: .9; margin-top: 2px; }
   .langs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
   .langs span { border: 1.5px solid rgba(255,255,255,.55); border-radius: 999px; padding: 4px 14px; font-weight: 600; font-size: .95rem; }
 
@@ -90,8 +91,6 @@
   .btn:hover { background: #e9f2ef; }
   .btn-primary { background: var(--brand); color: #fff; }
   .btn-primary:hover { background: var(--brand-2); }
-  .btn-wa { background: var(--wa); border-color: var(--wa); color: #fff; }
-  .btn-wa:hover { background: #189a4b; }
   .btn svg { width: 26px; height: 26px; flex: none; }
 
   /* Form */
@@ -194,6 +193,7 @@
 <svg width="0" height="0" class="sr" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="i-phone" viewBox="0 0 24 24"><path fill="currentColor" d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24 11.36 11.36 0 0 0 3.58.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.58a1 1 0 0 1-.25 1.01z"/></symbol>
+
     <symbol id="i-wa" viewBox="0 0 32 32"><path fill="currentColor" d="M16.04 3C9.02 3 3.3 8.7 3.3 15.72c0 2.25.59 4.44 1.7 6.37L3.2 29l7.08-1.86a12.7 12.7 0 0 0 5.75 1.38h.01c7.02 0 12.74-5.7 12.74-12.73A12.66 12.66 0 0 0 16.04 3zm0 23.37h-.01a10.6 10.6 0 0 1-5.4-1.48l-.39-.23-4.2 1.1 1.12-4.1-.25-.42a10.5 10.5 0 0 1-1.62-5.6c0-5.84 4.76-10.6 10.62-10.6a10.56 10.56 0 0 1 10.6 10.6c0 5.85-4.76 10.6-10.6 10.6zm5.82-7.94c-.32-.16-1.89-.93-2.18-1.04-.3-.1-.5-.16-.72.16-.21.32-.82 1.04-1.01 1.25-.19.21-.37.24-.69.08-.32-.16-1.35-.5-2.57-1.59-.95-.85-1.59-1.9-1.78-2.21-.19-.32-.02-.5.14-.65.14-.14.32-.37.48-.56.16-.18.21-.32.32-.53.1-.21.05-.4-.03-.56-.08-.16-.72-1.73-.98-2.37-.26-.62-.53-.54-.72-.55h-.61c-.21 0-.56.08-.85.4-.29.32-1.12 1.09-1.12 2.66s1.14 3.09 1.3 3.3c.16.21 2.25 3.43 5.45 4.81.76.33 1.35.52 1.82.67.76.24 1.46.21 2.01.13.61-.09 1.89-.77 2.15-1.52.27-.74.27-1.38.19-1.51-.08-.13-.29-.21-.61-.37z"/></symbol>
   </defs>
 </svg>
@@ -221,15 +221,15 @@
     <div class="wrap">
       <h1 id="hero-title">Book your doctor's appointment with one call
         <span class="ta" lang="ta">ஒரே அழைப்பில் மருத்துவர் சந்திப்பை முன்பதிவு செய்யுங்கள்</span></h1>
-      <p class="lead">Tap the phone to call our receptionist, or chat with us on WhatsApp. Our receptionist speaks Tamil, English and Hindi.</p>
+      <p class="lead">Tap the phone to call our receptionist, chat with us on WhatsApp, or send a request below. Our receptionist speaks Tamil, English and Hindi.</p>
       <div class="big-actions">
         <a class="round-action js-call" href="#" aria-label="Call the hospital to book an appointment">
           <span class="disc call"><svg aria-hidden="true"><use href="#i-phone"/></svg></span>
           <span class="lbl">Call to book<small lang="ta">அழைக்க</small></span>
         </a>
-        <a class="round-action js-wa" href="#" aria-label="Chat with the hospital on WhatsApp" rel="noopener">
+        <a class="round-action js-wa" href="#" aria-label="Chat with the hospital on WhatsApp (test mode)">
           <span class="disc wa"><svg aria-hidden="true"><use href="#i-wa"/></svg></span>
-          <span class="lbl">WhatsApp chat<small lang="ta">வாட்ஸ்அப்</small></span>
+          <span class="lbl">WhatsApp / <span lang="ta">வாட்ஸ்அப்</span><small class="wa-note">WhatsApp chat is in test mode</small><small class="wa-note" lang="ta">வாட்ஸ்அப் அரட்டை சோதனை முறையில் உள்ளது</small></span>
         </a>
       </div>
       <div class="langs" aria-label="Languages spoken"><span lang="ta">தமிழ்</span><span>English</span><span lang="hi">हिंदी</span></div>
@@ -257,7 +257,7 @@
   <section id="request" aria-labelledby="request-title">
     <div class="wrap">
       <h2 id="request-title">Appointment request<span class="ta" lang="ta">சந்திப்பு கோரிக்கை</span></h2>
-      <p>Fill this in and we will open WhatsApp with your details typed for you. Then just press send.</p>
+      <p>Fill this in and our staff will call you back to confirm.<span class="ta" lang="ta">இதை நிரப்புங்கள்; எங்கள் ஊழியர்கள் உங்களை அழைத்து உறுதிசெய்வார்கள்.</span></p>
       <form id="requestForm" novalidate>
         <p class="notice" role="note">This is a request, not a confirmed booking. Our staff will reply to confirm.<span class="ta" lang="ta">இது கோரிக்கை மட்டுமே; உறுதிசெய்யப்பட்ட முன்பதிவு அல்ல.</span></p>
 
@@ -285,10 +285,13 @@
           <div class="err" id="e-date"></div>
         </div>
 
-        <div class="field">
-          <label for="f-time">Preferred time <span class="opt">(optional)</span> <span class="ta" lang="ta">நேரம்</span></label>
-          <input id="f-time" name="time" type="time">
-        </div>
+        <fieldset>
+          <legend>Preferred time <span class="ta" lang="ta">நேரம்</span></legend>
+          <div class="choices">
+            <label><input type="radio" name="time" value="Morning" checked> Morning <span lang="ta">காலை</span></label>
+            <label><input type="radio" name="time" value="Evening"> Evening <span lang="ta">மாலை</span></label>
+          </div>
+        </fieldset>
 
         <fieldset>
           <legend>Have you visited before? <span class="ta" lang="ta">முன்பு வந்திருக்கிறீர்களா?</span></legend>
@@ -303,7 +306,8 @@
           <textarea id="f-reason" name="reason" maxlength="300"></textarea>
         </div>
 
-        <button class="btn btn-wa" type="submit"><svg aria-hidden="true"><use href="#i-wa"/></svg>Send request on WhatsApp</button>
+        <input class="chat-hp" id="f-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn btn-primary" type="submit" id="f-submit">Send request / <span lang="ta">கோரிக்கை அனுப்பு</span></button>
         <div class="status" id="formStatus" role="status" aria-live="polite"></div>
       </form>
     </div>
@@ -328,8 +332,8 @@
       <a class="round-action js-call" href="#" aria-label="Call the hospital to book an appointment">
         <span class="disc call"><svg aria-hidden="true"><use href="#i-phone"/></svg></span><span class="lbl">Call to book</span>
       </a>
-      <a class="round-action js-wa" href="#" aria-label="Chat with the hospital on WhatsApp" rel="noopener">
-        <span class="disc wa"><svg aria-hidden="true"><use href="#i-wa"/></svg></span><span class="lbl">WhatsApp</span>
+      <a class="round-action js-wa" href="#" aria-label="Chat with the hospital on WhatsApp (test mode)">
+        <span class="disc wa"><svg aria-hidden="true"><use href="#i-wa"/></svg></span><span class="lbl">WhatsApp / <span lang="ta">வாட்ஸ்அப்</span><small class="wa-note">Test mode / சோதனை</small></span>
       </a>
     </div>
   </div>
@@ -338,7 +342,6 @@
 <div class="float" aria-label="Quick contact">
   <button type="button" class="f-chat" id="chatOpen" aria-haspopup="dialog" aria-controls="chatPanel" aria-label="Chat with us – அரட்டை"><span aria-hidden="true">💬</span><span class="chat-label" aria-hidden="true">Chat with us / <span lang="ta">அரட்டை</span></span></button>
   <a class="f-call js-call" href="#" aria-label="Call the hospital to book an appointment"><svg aria-hidden="true"><use href="#i-phone"/></svg></a>
-  <a class="f-wa js-wa" href="#" aria-label="Chat with the hospital on WhatsApp" rel="noopener"><svg aria-hidden="true"><use href="#i-wa"/></svg></a>
 </div>
 
 <section class="chat-panel" id="chatPanel" role="dialog" aria-modal="true" aria-labelledby="chatTitle" hidden>
@@ -361,10 +364,14 @@
 <div class="toast" id="toast" role="alert" hidden></div>
 
 <script>
-  // ===== EDIT THESE TWO NUMBERS =====
+  // ===== SETTINGS =====
   const CALL_NUMBER = "+919429390825";
-  const WHATSAPP_NUMBER = "919429390825";
-  // ==================================
+  // Cloudflare Worker route that saves requests to the "Requests" Google Sheet
+  // (used by both the form and the chat box; the Worker holds the secret).
+  const WEBCHAT_URL = "https://lakshmi-sheets.mnivi2021.workers.dev/webchat";
+  // WhatsApp bot TEST number (wa.me format). "?text=Hi" starts the bot's appointment flow.
+  const WHATSAPP_URL = "https://wa.me/15556564409?text=Hi";
+  // ====================
 
   (function () {
     'use strict';
@@ -376,10 +383,7 @@
       { id: 3, name: 'Ms. Nivi', qualification: 'MBBS, MS', en: 'Heart Specialist', ta: 'இதய நிபுணர்' },
     ];
 
-    const waDigits = String(WHATSAPP_NUMBER).replace(/\D/g, '');
-    const WA_READY = /^\d{11,15}$/.test(waDigits) && !/X/i.test(WHATSAPP_NUMBER);
     const callHref = 'tel:' + String(CALL_NUMBER).replace(/[^\d+]/g, '');
-    const WA_SOON = 'WhatsApp chat is coming soon – please use the call button.';
 
     // ---- Larger text (remembered on this phone) ----
     const sizeBtn = document.getElementById('textSize');
@@ -406,17 +410,9 @@
       toastTimer = setTimeout(function () { toastEl.hidden = true; }, 5000);
     }
 
-    // Wire every call / WhatsApp button from the constants above (numbers are never shown as text).
+    // Wire every call / WhatsApp button from the settings above (numbers are never shown as text).
     document.querySelectorAll('.js-call').forEach(function (a) { a.href = callHref; });
-    document.querySelectorAll('.js-wa').forEach(function (a) {
-      if (WA_READY) {
-        a.href = 'https://wa.me/' + waDigits;
-        a.target = '_blank';
-      } else {
-        a.href = '#';
-        a.addEventListener('click', function (e) { e.preventDefault(); toast(WA_SOON); });
-      }
-    });
+    document.querySelectorAll('.js-wa').forEach(function (a) { a.href = WHATSAPP_URL; a.target = '_blank'; a.rel = 'noopener'; });
 
     // ---- Doctors (real list from the hospital database) ----
     const listEl = document.getElementById('doctorList');
@@ -440,7 +436,8 @@
         b.addEventListener('click', function () {
           selectEl.value = label;
           clearError('doctor');
-          document.getElementById('request').scrollIntoView();
+          resetStatus();
+          document.getElementById('request').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
           document.getElementById('f-name').focus({ preventScroll: true });
         });
         card.append(dept, deptTa, h, q, b);
@@ -491,62 +488,107 @@
       e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
     });
 
-    function prettyDate(iso) {
-      const p = iso.split('-').map(Number);
-      const d = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
-      return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const submitBtn = document.getElementById('f-submit');
+    const submitHtml = submitBtn.innerHTML;
+    const TIMEOUT_MS = 15000;
+    const SUCCESS = 'Thank you! Your request is noted. Our hospital staff will call you back shortly.';
+    const SUCCESS_TA = 'நன்றி! உங்கள் கோரிக்கை பதிவுசெய்யப்பட்டது. எங்கள் மருத்துவமனை ஊழியர்கள் விரைவில் உங்களை அழைப்பார்கள்.';
+    let sending = false;
+
+    function resetStatus() { statusEl.textContent = ''; statusEl.className = 'status'; }
+    function isSunday(iso) { const p = iso.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]).getDay() === 0; }
+    function normaliseMobile(v) {
+      let d = String(v || '').replace(/\D/g, '');
+      if (d.length === 12 && d.indexOf('91') === 0) d = d.slice(2);
+      if (d.length === 11 && d.charAt(0) === '0') d = d.slice(1);
+      return d;
     }
-    function prettyTime(hhmm) {
-      const p = hhmm.split(':').map(Number);
-      return (p[0] % 12 || 12) + ':' + String(p[1]).padStart(2, '0') + ' ' + (p[0] >= 12 ? 'PM' : 'AM');
+
+    function showSuccess() {
+      statusEl.className = 'status info';
+      statusEl.textContent = '';
+      const p1 = document.createElement('p'); p1.style.margin = '0'; p1.textContent = SUCCESS;
+      const p2 = document.createElement('p'); p2.style.margin = '8px 0 0'; p2.lang = 'ta'; p2.textContent = SUCCESS_TA;
+      statusEl.append(p1, p2);
+      form.reset();
+      dateEl.min = todayLocal();
+      statusEl.focus && statusEl.setAttribute('tabindex', '-1');
+    }
+    function showFailure(payload) {
+      statusEl.className = 'status warn';
+      statusEl.textContent = '';
+      const msg = document.createElement('p'); msg.style.margin = '0 0 10px';
+      msg.textContent = 'Sorry, we could not send your request right now. Please try again, or call us.';
+      const msgTa = document.createElement('p'); msgTa.style.margin = '0 0 12px'; msgTa.lang = 'ta';
+      msgTa.textContent = 'மன்னிக்கவும், உங்கள் கோரிக்கையை இப்போது அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும் அல்லது எங்களை அழைக்கவும்.';
+      const row = document.createElement('div'); row.style.display = 'flex'; row.style.flexWrap = 'wrap'; row.style.gap = '10px';
+      const retry = document.createElement('button');
+      retry.type = 'button'; retry.className = 'btn btn-primary'; retry.style.width = 'auto'; retry.textContent = 'Retry / மீண்டும் முயற்சி';
+      retry.addEventListener('click', function () { send(payload); });
+      const call = document.createElement('a');
+      call.className = 'btn'; call.style.width = 'auto'; call.href = callHref;
+      call.setAttribute('aria-label', 'Call the hospital');
+      call.innerHTML = '<svg aria-hidden="true"><use href="#i-phone"/></svg>';
+      call.appendChild(document.createTextNode('Call / அழைக்க'));
+      row.append(retry, call);
+      statusEl.append(msg, msgTa, row);
+      retry.focus();
+    }
+
+    // Same request as the chat box: text/plain body (no CORS preflight), 15-second timeout.
+    function send(payload) {
+      if (sending) return;
+      sending = true;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending… / அனுப்புகிறது…';
+      statusEl.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+      const timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
+      fetch(WEBCHAT_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify(payload), signal: ctrl ? ctrl.signal : undefined,
+      })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return r.ok && j && j.ok === true; }); })
+        .catch(function () { return false; })
+        .then(function (ok) {
+          clearTimeout(timer);
+          sending = false;
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = submitHtml;
+          if (ok) showSuccess(); else showFailure(payload);
+        });
     }
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      statusEl.textContent = ''; statusEl.className = 'status';
+      if (sending) return;
+      resetStatus();
       const v = {
         name: form.elements.name.value.trim().replace(/\s+/g, ' '),
-        mobile: form.elements.mobile.value.trim(),
+        mobile: normaliseMobile(form.elements.mobile.value),
         doctor: form.elements.doctor.value,
         date: form.elements.date.value,
-        time: form.elements.time.value,
+        time: form.elements.time.value || 'Morning',
         visit: form.elements.visit.value,
-        reason: form.elements.reason.value.trim().replace(/\s+/g, ' '),
+        reason: form.elements.reason.value.trim().replace(/\s+/g, ' ').slice(0, 300),
       };
       ['name', 'mobile', 'doctor', 'date'].forEach(clearError);
       let firstBad = null;
       const bad = function (f, msg) { setError(f, msg); if (!firstBad) firstBad = f; };
-      if (v.name.length < 2) bad('name', 'Please enter the patient’s name.');
-      if (!/^[6-9]\d{9}$/.test(v.mobile)) bad('mobile', 'Please enter a 10-digit mobile number starting with 6, 7, 8 or 9.');
+      if (v.name.length < 2 || v.name.length > 80) bad('name', 'Please enter a name of 2 to 80 letters.');
+      if (!/^[6-9]\d{9}$/.test(v.mobile)) bad('mobile', 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8 or 9.');
       if (!v.doctor) bad('doctor', 'Please choose a doctor.');
-      if (!v.date) bad('date', 'Please choose a date.');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) bad('date', 'Please choose a date.');
       else if (v.date < todayLocal()) bad('date', 'Please choose today or a later date.');
+      else if (isSunday(v.date)) bad('date', 'We are closed on Sunday. Please choose another day.');
       if (firstBad) { form.elements[firstBad].focus(); return; }
 
-      if (!WA_READY) {
-        statusEl.className = 'status warn';
-        statusEl.textContent = WA_SOON;
-        return;
-      }
-
-      const lines = [
-        'Appointment request – Lakshmi Multispecialty Hospital',
-        '',
-        'Patient: ' + v.name,
-        'Mobile: ' + v.mobile,
-        'Doctor: ' + v.doctor,
-        'Date: ' + prettyDate(v.date),
-        'Time: ' + (v.time ? prettyTime(v.time) : 'Any time'),
-        'Visit: ' + v.visit,
-      ];
-      if (v.reason) lines.push('Reason: ' + v.reason);
-      lines.push('', 'This is a request, not a confirmed booking.');
-
-      const url = 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(lines.join('\n'));
-      const win = window.open(url, '_blank', 'noopener');
-      if (!win) window.location.href = url;
-      statusEl.className = 'status info';
-      statusEl.textContent = 'WhatsApp is opening with your details. Press send there. This is a request, not a confirmed booking – our staff will reply to confirm.';
+      send({
+        patient_name: v.name, mobile: v.mobile, doctor: v.doctor, preferred_date: v.date,
+        preferred_time: v.time, reason: v.reason, patient_type: v.visit === 'Visited before' ? 'existing' : 'new',
+        language: /[\u0B80-\u0BFF]/.test(v.name + v.reason) ? 'Tamil' : 'English',
+        website: form.elements.website.value || '',
+      });
     });
   })();
 </script>
@@ -558,7 +600,6 @@
   // personal is stored in the browser – the conversation lives in memory only.
   (function () {
     'use strict';
-    var WEBCHAT_URL = 'https://lakshmi-sheets.mnivi2021.workers.dev/webchat';
     var TIMEOUT_MS = 15000;
 
     var T = {
@@ -578,7 +619,7 @@
         fTime: 'Time', fReason: 'Reason', fType: 'Patient type', none: '–',
         note: 'This is a request, not a confirmed appointment.', confirm: 'Confirm', edit: 'Edit',
         editing: 'No problem – let’s update the details.', sending: 'Sending…',
-        fail: 'Sorry, we could not send your request right now. Please call us or send us a WhatsApp message.',
+        fail: 'Sorry, we could not send your request right now. Please try again, call us, or message us on WhatsApp.',
         retry: 'Try again', again: 'Start again', send: 'Send', call: 'Call', whatsapp: 'WhatsApp',
         phName: 'Patient name', phMobile: '10-digit mobile', phReason: 'Reason (optional)', phDate: 'Date',
       },
@@ -598,7 +639,7 @@
         fTime: 'நேரம்', fReason: 'காரணம்', fType: 'நோயாளி வகை', none: '–',
         note: 'இது கோரிக்கை மட்டுமே; உறுதிசெய்யப்பட்ட சந்திப்பு அல்ல.', confirm: 'உறுதி செய்', edit: 'மாற்று',
         editing: 'சரி – விவரங்களை மாற்றலாம்.', sending: 'அனுப்புகிறது…',
-        fail: 'மன்னிக்கவும், உங்கள் கோரிக்கையை இப்போது அனுப்ப முடியவில்லை. எங்களை அழைக்கவும் அல்லது வாட்ஸ்அப் செய்யவும்.',
+        fail: 'மன்னிக்கவும், உங்கள் கோரிக்கையை இப்போது அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும், எங்களை அழைக்கவும் அல்லது வாட்ஸ்அப் செய்யவும்.',
         retry: 'மீண்டும் முயற்சி', again: 'மீண்டும் தொடங்கு', send: 'அனுப்பு', call: 'அழைக்க', whatsapp: 'வாட்ஸ்அப்',
         phName: 'நோயாளியின் பெயர்', phMobile: '10 இலக்க மொபைல்', phReason: 'காரணம் (விருப்பம்)', phDate: 'தேதி',
       },
@@ -785,7 +826,7 @@
       [[call, 'q-call', t('call'), '#i-phone'], [wa, 'q-wa', t('whatsapp'), '#i-wa']].forEach(function (x) {
         if (!x[0]) return;
         var href = x[0].getAttribute('href');
-        if (!href || href === '#') return; // WhatsApp not configured yet
+        if (!href || href === '#') return;
         var a = document.createElement('a');
         a.className = x[1]; a.href = href;
         if (/^https:/.test(href)) { a.target = '_blank'; a.rel = 'noopener'; }
