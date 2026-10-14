@@ -1,0 +1,5 @@
+﻿# Never upload local secrets or tool folders to Vercel
+.env*
+.vercel
+.gitignore
+.vercelignore
