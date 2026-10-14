@@ -22,7 +22,7 @@ var MAX_CELL = 45000; // Google Sheets allows 50,000 characters per cell
 
 var REQUEST_SHEET = 'Requests';
 var REQUEST_HEADERS = ['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time',
-  'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email'];
+  'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email', 'Request No'];
 
 var CALL_SHEET = 'Call Log';
 var CALL_HEADERS = ['Timestamp', 'Caller number', 'Call ID', 'Duration', 'Summary', 'Outcome', 'Transcript', 'Raw JSON'];
@@ -80,9 +80,9 @@ function doPost(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     if (String(pick_(body, ['type']) || '').toLowerCase() === 'request') {
-      appendRequest_(ss, body);
-      if (shouldEmail_(body)) mailFor = body;
-      result = { success: true, say: THANK_YOU };
+      var requestNo = appendRequest_(ss, body);
+      if (shouldEmail_(body)) mailFor = Object.assign({}, body, { request_no: requestNo });
+      result = { success: true, say: THANK_YOU, request_no: requestNo };
     } else {
       appendCallLog_(ss, body);
       result = { success: true };
@@ -101,9 +101,24 @@ function doPost(e) {
 
 // ---------------------------------------------------------------- writers
 
-/** Appends one row to "Requests". Caller must hold the script lock. */
+/**
+ * Next request number: LMH1001, LMH1002, … Stored in Script Property
+ * REQUEST_COUNTER. Caller must hold the script lock, so two requests can
+ * never get the same number.
+ */
+function nextRequestNo_() {
+  var props = PropertiesService.getScriptProperties();
+  var n = parseInt(props.getProperty('REQUEST_COUNTER') || '1000', 10);
+  if (!isFinite(n) || n < 1000) n = 1000;
+  n += 1;
+  props.setProperty('REQUEST_COUNTER', String(n));
+  return 'LMH' + n;
+}
+
+/** Appends one row to "Requests" and returns its request number. Caller must hold the script lock. */
 function appendRequest_(ss, b) {
   var sheet = ensureSheet_(ss, REQUEST_SHEET, REQUEST_HEADERS);
+  var requestNo = nextRequestNo_();
   sheet.appendRow([
     now_(),
     text_(pick_(b, ['patient_name', 'name', 'caller_name'])),
@@ -119,7 +134,9 @@ function appendRequest_(ss, b) {
     text_(pick_(b, ['source']) || 'AI call – system offline'),
     text_(pick_(b, ['status']) || 'New'),
     text_(validEmail_(pick_(b, ['email', 'patient_email']))),
+    requestNo,
   ]);
+  return requestNo;
 }
 
 // ---------------------------------------------------------------- confirmation email (Website chat)
@@ -151,15 +168,17 @@ function sendRequestEmail_(b) {
       date: String(pick_(b, ['preferred_date', 'appointment_date', 'date']) || '').slice(0, 40),
       time: String(pick_(b, ['preferred_time', 'appointment_time', 'time']) || '').slice(0, 40),
       mobile: mobile_(pick_(b, ['mobile', 'phone'])),
+      no: String(b.request_no || ''),
     };
     var timeTa = d.time === 'Morning' ? 'காலை' : d.time === 'Evening' ? 'மாலை' : d.time;
-    var subject = 'Appointment request received – Lakshmi Multispecialty Hospital';
+    var subject = 'Appointment request ' + d.no + ' received – Lakshmi Multispecialty Hospital';
     var plain = [
       'Lakshmi Multispecialty Hospital, Virudhunagar',
       '',
       'Dear ' + d.name + ',',
       'We have received your appointment request.',
       '',
+      'Appointment request number: ' + d.no,
       'Patient: ' + d.name,
       'Doctor: ' + d.doctor,
       'Preferred date: ' + d.date,
@@ -170,6 +189,7 @@ function sendRequestEmail_(b) {
       '----',
       'லட்சுமி மல்டிஸ்பெஷாலிட்டி மருத்துவமனை, விருதுநகர்',
       'உங்கள் சந்திப்பு கோரிக்கை எங்களுக்குக் கிடைத்தது.',
+      'சந்திப்பு கோரிக்கை எண்: ' + d.no,
       'நோயாளி: ' + d.name,
       'மருத்துவர்: ' + d.doctor,
       'தேதி: ' + d.date,
@@ -185,7 +205,7 @@ function sendRequestEmail_(b) {
       '<div style="color:#4c5e5b;margin-bottom:16px">Virudhunagar, Tamil Nadu</div>' +
       '<p>Dear ' + escHtml_(d.name) + ',<br>We have received your appointment request.</p>' +
       '<table style="border-collapse:collapse;margin:8px 0 16px">' +
-      row('Patient', d.name) + row('Doctor', d.doctor) + row('Preferred date', d.date) + row('Preferred time', d.time) +
+      row('Request number', d.no) + row('Patient', d.name) + row('Doctor', d.doctor) + row('Preferred date', d.date) + row('Preferred time', d.time) +
       '</table>' +
       '<p style="background:#fff8e6;border:1px solid #f0cf7a;border-radius:8px;padding:10px 12px"><b>This is a request, not a confirmed booking.</b> Our staff will call you on <b>' + escHtml_(d.mobile) + '</b> to confirm.</p>' +
       '<hr style="border:0;border-top:1px solid #d6e3df;margin:20px 0">' +
@@ -193,7 +213,7 @@ function sendRequestEmail_(b) {
       '<h3 style="color:#0F4C45;margin:0 0 8px">லட்சுமி மல்டிஸ்பெஷாலிட்டி மருத்துவமனை</h3>' +
       '<p>உங்கள் சந்திப்பு கோரிக்கை எங்களுக்குக் கிடைத்தது.</p>' +
       '<table style="border-collapse:collapse;margin:8px 0 16px">' +
-      row('நோயாளி', d.name) + row('மருத்துவர்', d.doctor) + row('தேதி', d.date) + row('நேரம்', timeTa) +
+      row('கோரிக்கை எண்', d.no) + row('நோயாளி', d.name) + row('மருத்துவர்', d.doctor) + row('தேதி', d.date) + row('நேரம்', timeTa) +
       '</table>' +
       '<p>இது கோரிக்கை மட்டுமே; உறுதிசெய்யப்பட்ட முன்பதிவு அல்ல. உறுதிசெய்ய எங்கள் ஊழியர்கள் உங்களை <b>' + escHtml_(d.mobile) + '</b> எண்ணில் அழைப்பார்கள்.</p>' +
       '</div>' +

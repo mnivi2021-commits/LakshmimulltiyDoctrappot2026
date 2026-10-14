@@ -12,6 +12,7 @@ const CODE = fs.readFileSync(path.join(__dirname, '..', 'google-sheets', 'Code.g
 function makeEnv({ secret = 'sheet-secret', lockFails = false, props = {}, files = [], stubs = {}, mailFails = false } = {}) {
   const sheets = new Map();
   const mails = [];
+  const store = { ...props };
   const locks = { held: 0, max: 0, released: 0 };
   function makeSheet(name) {
     const sheet = {
@@ -38,7 +39,7 @@ function makeEnv({ secret = 'sheet-secret', lockFails = false, props = {}, files
   const ctx = {
     console: { error() {} },
     SpreadsheetApp: { getActiveSpreadsheet: () => ss },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => (k === 'SHEETS_SECRET' ? secret : (props[k] ?? null)) }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => (k === 'SHEETS_SECRET' ? secret : (store[k] ?? null)), setProperty: (k, v) => { store[k] = String(v); } }) },
     LockService: {
       getScriptLock: () => ({
         waitLock: () => { if (lockFails) throw new Error('timeout'); locks.held++; locks.max = Math.max(locks.max, locks.held); },
@@ -61,7 +62,7 @@ function makeEnv({ secret = 'sheet-secret', lockFails = false, props = {}, files
     const out = ctx.doPost({ postData: { contents: typeof body === 'string' ? body : JSON.stringify(body) }, parameter: query });
     return { json: JSON.parse(out.body), mime: out.mime };
   };
-  return { ctx, sheets, locks, post, mails };
+  return { ctx, sheets, locks, post, mails, store };
 }
 
 const REQUEST = {
@@ -79,14 +80,14 @@ test('request → "Requests" sheet with headers, frozen bold header, IST timesta
   const env = makeEnv();
   const r = env.post(REQUEST);
   assert.equal(r.mime, 'application/json');
-  assert.deepEqual(r.json, { success: true, say: 'Thank you. I have noted your details. Our hospital staff will call you back to confirm your appointment.' });
+  assert.deepEqual(r.json, { success: true, say: 'Thank you. I have noted your details. Our hospital staff will call you back to confirm your appointment.', request_no: 'LMH1001' });
   const s = env.sheets.get('Requests');
   assert.deepEqual(s.rows[0], ['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time',
-    'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email']);
+    'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email', 'Request No']);
   assert.equal(s.frozen, 1);
   assert.equal(s.boldHeader, true);
   assert.deepEqual(s.rows[1], ['Asia/Kolkata|yyyy-MM-dd HH:mm:ss', 'Ravi Kumar', '9876543210', 'Mr. Vijul – Orthopaedic', '2026-10-12',
-    '10:30 AM', 'Knee pain', 'New', 'Tamil', "'+919876543210", 'CA123', 'AI call – system offline', 'New', '']);
+    '10:30 AM', 'Knee pain', 'New', 'Tamil', "'+919876543210", 'CA123', 'AI call – system offline', 'New', '', 'LMH1001']);
   assert.equal(env.sheets.has('Call Log'), false);
   assert.equal(env.locks.released, 1);
 });
@@ -216,8 +217,9 @@ test('Website chat request with email: saved in the last "Email" column and a co
   const env = makeEnv();
   assert.equal(env.post(WEB).json.success, true);
   const row = env.sheets.get('Requests').rows[1];
-  assert.equal(row.length, 14);
+  assert.equal(row.length, 15);
   assert.equal(row[13], 'anitha@example.com');
+  assert.equal(row[14], 'LMH1001');
   assert.equal(row[11], 'Website chat');
   assert.equal(env.mails.length, 1);
   const m = env.mails[0];
@@ -230,6 +232,9 @@ test('Website chat request with email: saved in the last "Email" column and a co
   assert.ok(m.htmlBody.includes('Anitha &lt;b&gt;R&lt;/b&gt;'), 'patient name is HTML-escaped');
   assert.ok(!m.htmlBody.includes('<b>R</b>'));
   assert.ok(m.htmlBody.includes('9123456789'));
+  assert.match(m.subject, /LMH1001/);
+  assert.ok(m.body.includes('Appointment request number: LMH1001') && m.body.includes('சந்திப்பு கோரிக்கை எண்: LMH1001'));
+  assert.ok(m.htmlBody.includes('LMH1001'));
   assert.equal(env.locks.held, 0, 'lock released (email sent outside the lock)');
 });
 
@@ -267,4 +272,23 @@ test('existing 13-column "Requests" sheet gets the "Email" header appended (no c
   assert.equal(old.rows[0][13], 'Email');
   assert.equal(old.rows[1][1], 'Old Row', 'old data untouched');
   assert.equal(old.rows[2][13], 'anitha@example.com');
+});
+
+test('request numbers start at LMH1001, go up by one, are stored and returned', () => {
+  const env = makeEnv();
+  const a = env.post(WEB).json;
+  const b = env.post({ ...WEB, email: '' }).json;
+  const c = env.post(REQUEST).json; // other sources get a number too
+  assert.deepEqual([a.request_no, b.request_no, c.request_no], ['LMH1001', 'LMH1002', 'LMH1003']);
+  assert.deepEqual(env.sheets.get('Requests').rows.slice(1).map((r) => r[14]), ['LMH1001', 'LMH1002', 'LMH1003']);
+  assert.equal(env.store.REQUEST_COUNTER, '1003');
+  // call logs do not consume numbers
+  env.post({ call_id: 'x' }, { key: 'sheet-secret' });
+  assert.equal(env.post(WEB).json.request_no, 'LMH1004');
+});
+
+test('request counter continues from the stored value (and repairs bad values)', () => {
+  assert.equal(makeEnv({ props: { REQUEST_COUNTER: '1056' } }).post(WEB).json.request_no, 'LMH1057');
+  assert.equal(makeEnv({ props: { REQUEST_COUNTER: 'oops' } }).post(WEB).json.request_no, 'LMH1001');
+  assert.equal(makeEnv({ props: { REQUEST_COUNTER: '12' } }).post(WEB).json.request_no, 'LMH1001');
 });

@@ -21,5 +21,5 @@
       out[SECRET_FIELD] = SHEETS_SECRET;
       const r = await fetch(SHEETS_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(out), redirect: "follow" });
       let j = {}; try { j = JSON.parse(await r.text()); } catch (e) {}
-      return json({ ok: !!j.success }, j.success ? 200 : 502);
+      return json({ ok: !!j.success, request_no: j.request_no || "" }, j.success ? 200 : 502);
     }

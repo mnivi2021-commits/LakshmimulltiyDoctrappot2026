@@ -87,6 +87,12 @@ test('docs/index.html (GitHub Pages / Vercel copy): chat box present, posts to W
   assert.match(html, /If you want a confirmation email, please give your email ID\. It’s optional\./);
   assert.match(html, /email: d\.email \|\| ''/);
   assert.match(html, /A copy has been emailed to you/);
+  // request number from the Worker reply (LMH1001…) is shown in the final confirmation
+  assert.match(html, /j \? done\(j\.request_no\) : failed\(\)/);
+  assert.match(html, /\/\^LMH\\d\{4,\}\$\/\.test/);
+  assert.match(html, /Your appointment request number: ' \+ no \+ '\. Please keep it\./);
+  // A+ larger-text button removed
+  assert.ok(!/textSize|class="textsize"|Larger text|lmh_big_text/.test(html), 'A+ button removed');
   assert.ok(!/window\.open/.test(html), 'nothing opens other apps');
   // every inline script still parses
   for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new Function(code));

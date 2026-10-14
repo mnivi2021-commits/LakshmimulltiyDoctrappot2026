@@ -36,7 +36,7 @@ function makeEnv({ today = '2026-10-09', props = {}, api = 'ok' } = {}) {
   const ctx = {
     console: { error() {} },
     SpreadsheetApp: { getActiveSpreadsheet: () => ss },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => allProps[k] ?? null }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => allProps[k] ?? null, setProperty: (k, v) => { allProps[k] = String(v); } }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     CacheService: { getScriptCache: () => ({ get: (k) => cache.get(k) ?? null, put: (k, v) => cache.set(k, v), remove: (k) => cache.delete(k) }) },
     ContentService: { MimeType: { JSON: 'application/json', TEXT: 'text/plain' }, createTextOutput: (s) => ({ body: s, setMimeType(m) { this.mime = m; return this; } }) },

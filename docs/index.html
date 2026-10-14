@@ -20,7 +20,6 @@
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-  html.big { font-size: 120%; }
   body { margin: 0; font: 1.19rem/1.55 var(--font); color: var(--ink); background: var(--mint); padding-bottom: 96px; }
   img, svg { display: block; }
   a { color: var(--brand); }
@@ -42,9 +41,6 @@
   .brand svg { width: 48px; height: 48px; flex: none; }
   .brand b { display: block; font-size: 1.05rem; line-height: 1.2; }
   .brand small { display: block; font-size: .82rem; color: var(--muted); line-height: 1.3; }
-  .textsize { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 14px; border: 2px solid var(--brand); border-radius: 12px; background: #fff; color: var(--brand); font: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; }
-  .textsize b { font-size: 1.25rem; }
-  .textsize[aria-pressed="true"] { background: var(--brand); color: #fff; }
   nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
   nav a { display: inline-block; padding: 8px 2px; font-size: .95rem; font-weight: 600; text-decoration: none; color: var(--brand); min-height: 44px; line-height: 28px; }
   nav a:hover { text-decoration: underline; }
@@ -200,7 +196,6 @@
       <svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="13" fill="#0F4C45"/><path fill="#fff" d="M20 9h8v11h11v8H28v11h-8V28H9v-8h11z"/><circle cx="24" cy="24" r="3.4" fill="#E8A317"/></svg>
       <span><b>Lakshmi Multispecialty Hospital</b><small lang="ta">லட்சுமி மல்டிஸ்பெஷாலிட்டி மருத்துவமனை</small><small>Virudhunagar, Tamil Nadu</small></span>
     </a>
-    <button type="button" class="textsize" id="textSize" aria-pressed="false"><b aria-hidden="true">A+</b> Larger text <span lang="ta">பெரிய எழுத்து</span></button>
     <nav aria-label="Main">
       <ul>
         <li><a href="#how">How to book</a></li>
@@ -317,21 +312,6 @@
     ];
 
     const callHref = 'tel:' + String(CALL_NUMBER).replace(/[^\d+]/g, '');
-
-    // ---- Larger text (remembered on this phone) ----
-    const sizeBtn = document.getElementById('textSize');
-    function applySize(big) {
-      document.documentElement.classList.toggle('big', big);
-      sizeBtn.setAttribute('aria-pressed', String(big));
-    }
-    let bigText = false;
-    try { bigText = localStorage.getItem('lmh_big_text') === '1'; } catch (e) { /* storage blocked */ }
-    applySize(bigText);
-    sizeBtn.addEventListener('click', function () {
-      bigText = !bigText;
-      applySize(bigText);
-      try { localStorage.setItem('lmh_big_text', bigText ? '1' : '0'); } catch (e) { /* ignore */ }
-    });
 
     const toastEl = document.getElementById('toast');
     let toastTimer;
@@ -611,16 +591,19 @@
         method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
         body: JSON.stringify(payload), signal: ctrl ? ctrl.signal : undefined,
       })
-        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return r.ok && j && j.ok === true; }); })
-        .catch(function () { return false; })
-        .then(function (ok) {
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return (r.ok && j && j.ok === true) ? j : null; }); })
+        .catch(function () { return null; })
+        .then(function (j) {
           clearTimeout(timer);
-          ok ? done() : failed();
+          j ? done(j.request_no) : failed();
         });
     }
-    function done() {
+    function done(requestNo) {
       S.step = 'done'; clearUI();
-      bubble(SUCCESS + (S.data.email ? '\n\n' + T.en.emailed + '\n' + T.ta.emailed : ''), 'bot', 'ok');
+      var no = /^LMH\d{4,}$/.test(String(requestNo || '')) ? String(requestNo) : '';
+      bubble(SUCCESS +
+        (no ? '\n\nYour appointment request number: ' + no + '. Please keep it.\nஉங்கள் சந்திப்பு கோரிக்கை எண்: ' + no + '. இதை வைத்துக்கொள்ளவும்.' : '') +
+        (S.data.email ? '\n\n' + T.en.emailed + '\n' + T.ta.emailed : ''), 'bot', 'ok');
       quickButtons([{ label: t('again'), onClick: start }]);
     }
     function failed() {
