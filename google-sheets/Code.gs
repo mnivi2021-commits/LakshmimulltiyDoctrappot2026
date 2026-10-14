@@ -22,7 +22,7 @@ var MAX_CELL = 45000; // Google Sheets allows 50,000 characters per cell
 
 var REQUEST_SHEET = 'Requests';
 var REQUEST_HEADERS = ['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time',
-  'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status'];
+  'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email'];
 
 var CALL_SHEET = 'Call Log';
 var CALL_HEADERS = ['Timestamp', 'Caller number', 'Call ID', 'Duration', 'Summary', 'Outcome', 'Transcript', 'Raw JSON'];
@@ -75,20 +75,28 @@ function doPost(e) {
   } catch (err) {
     return json_({ success: false, message: 'Busy, please retry' });
   }
+  var result;
+  var mailFor = null;
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     if (String(pick_(body, ['type']) || '').toLowerCase() === 'request') {
       appendRequest_(ss, body);
-      return json_({ success: true, say: THANK_YOU });
+      if (shouldEmail_(body)) mailFor = body;
+      result = { success: true, say: THANK_YOU };
+    } else {
+      appendCallLog_(ss, body);
+      result = { success: true };
     }
-    appendCallLog_(ss, body);
-    return json_({ success: true });
   } catch (err) {
     console.error(err);
-    return json_({ success: false, message: 'Could not save' });
+    result = { success: false, message: 'Could not save' };
   } finally {
     lock.releaseLock();
   }
+  // Outside the lock: a slow or failing email never blocks other saves,
+  // and never changes the "saved" answer.
+  if (mailFor) sendRequestEmail_(mailFor);
+  return json_(result);
 }
 
 // ---------------------------------------------------------------- writers
@@ -110,7 +118,109 @@ function appendRequest_(ss, b) {
     text_(pick_(b, ['call_sid', 'call_id', 'callId', 'message_id'])),
     text_(pick_(b, ['source']) || 'AI call – system offline'),
     text_(pick_(b, ['status']) || 'New'),
+    text_(validEmail_(pick_(b, ['email', 'patient_email']))),
   ]);
+}
+
+// ---------------------------------------------------------------- confirmation email (Website chat)
+
+/** Returns the email if it looks valid, otherwise ''. */
+function validEmail_(v) {
+  var e = String(v || '').trim();
+  return (e.length <= 120 && /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[A-Za-z]{2,}$/.test(e)) ? e : '';
+}
+
+function shouldEmail_(b) {
+  return String(pick_(b, ['source']) || '') === 'Website chat' && validEmail_(pick_(b, ['email', 'patient_email'])) !== '';
+}
+
+function escHtml_(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+/** Sends the "request received" email (English + Tamil). Never throws. */
+function sendRequestEmail_(b) {
+  try {
+    var to = validEmail_(pick_(b, ['email', 'patient_email']));
+    if (!to) return false;
+    var d = {
+      name: String(pick_(b, ['patient_name', 'name']) || '').slice(0, 80),
+      doctor: String(pick_(b, ['doctor']) || '').slice(0, 120),
+      date: String(pick_(b, ['preferred_date', 'appointment_date', 'date']) || '').slice(0, 40),
+      time: String(pick_(b, ['preferred_time', 'appointment_time', 'time']) || '').slice(0, 40),
+      mobile: mobile_(pick_(b, ['mobile', 'phone'])),
+    };
+    var timeTa = d.time === 'Morning' ? 'காலை' : d.time === 'Evening' ? 'மாலை' : d.time;
+    var subject = 'Appointment request received – Lakshmi Multispecialty Hospital';
+    var plain = [
+      'Lakshmi Multispecialty Hospital, Virudhunagar',
+      '',
+      'Dear ' + d.name + ',',
+      'We have received your appointment request.',
+      '',
+      'Patient: ' + d.name,
+      'Doctor: ' + d.doctor,
+      'Preferred date: ' + d.date,
+      'Preferred time: ' + d.time,
+      '',
+      'This is a request, not a confirmed booking. Our staff will call you on ' + d.mobile + ' to confirm.',
+      '',
+      '----',
+      'லட்சுமி மல்டிஸ்பெஷாலிட்டி மருத்துவமனை, விருதுநகர்',
+      'உங்கள் சந்திப்பு கோரிக்கை எங்களுக்குக் கிடைத்தது.',
+      'நோயாளி: ' + d.name,
+      'மருத்துவர்: ' + d.doctor,
+      'தேதி: ' + d.date,
+      'நேரம்: ' + timeTa,
+      'இது கோரிக்கை மட்டுமே; உறுதிசெய்யப்பட்ட முன்பதிவு அல்ல. உறுதிசெய்ய எங்கள் ஊழியர்கள் உங்களை ' + d.mobile + ' எண்ணில் அழைப்பார்கள்.',
+      '',
+      'Medical emergency? Call 108. / அவசர நிலையில் 108 ஐ அழைக்கவும்.',
+    ].join('\n');
+    var row = function (k, v) { return '<tr><td style="padding:4px 12px 4px 0;color:#4c5e5b">' + escHtml_(k) + '</td><td style="padding:4px 0;font-weight:bold">' + escHtml_(v) + '</td></tr>'; };
+    var html =
+      '<div style="font-family:Arial,sans-serif;font-size:15px;color:#1c2b29;max-width:560px">' +
+      '<h2 style="color:#0F4C45;margin:0 0 4px">Lakshmi Multispecialty Hospital</h2>' +
+      '<div style="color:#4c5e5b;margin-bottom:16px">Virudhunagar, Tamil Nadu</div>' +
+      '<p>Dear ' + escHtml_(d.name) + ',<br>We have received your appointment request.</p>' +
+      '<table style="border-collapse:collapse;margin:8px 0 16px">' +
+      row('Patient', d.name) + row('Doctor', d.doctor) + row('Preferred date', d.date) + row('Preferred time', d.time) +
+      '</table>' +
+      '<p style="background:#fff8e6;border:1px solid #f0cf7a;border-radius:8px;padding:10px 12px"><b>This is a request, not a confirmed booking.</b> Our staff will call you on <b>' + escHtml_(d.mobile) + '</b> to confirm.</p>' +
+      '<hr style="border:0;border-top:1px solid #d6e3df;margin:20px 0">' +
+      '<div lang="ta">' +
+      '<h3 style="color:#0F4C45;margin:0 0 8px">லட்சுமி மல்டிஸ்பெஷாலிட்டி மருத்துவமனை</h3>' +
+      '<p>உங்கள் சந்திப்பு கோரிக்கை எங்களுக்குக் கிடைத்தது.</p>' +
+      '<table style="border-collapse:collapse;margin:8px 0 16px">' +
+      row('நோயாளி', d.name) + row('மருத்துவர்', d.doctor) + row('தேதி', d.date) + row('நேரம்', timeTa) +
+      '</table>' +
+      '<p>இது கோரிக்கை மட்டுமே; உறுதிசெய்யப்பட்ட முன்பதிவு அல்ல. உறுதிசெய்ய எங்கள் ஊழியர்கள் உங்களை <b>' + escHtml_(d.mobile) + '</b> எண்ணில் அழைப்பார்கள்.</p>' +
+      '</div>' +
+      '<p style="color:#b3261e;font-weight:bold">Medical emergency? Call 108. / அவசர நிலையில் 108 ஐ அழைக்கவும்.</p>' +
+      '</div>';
+    MailApp.sendEmail({ to: to, subject: subject, body: plain, htmlBody: html, name: 'Lakshmi Multispecialty Hospital' });
+    return true;
+  } catch (err) {
+    logError_('email', err, '');
+    return false;
+  }
+}
+
+/** Writes to the "WA Errors" sheet from Code.gs (works even without WhatsApp.gs). Never throws. */
+function logError_(where, err, details) {
+  try {
+    var lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+    try {
+      var sheet = ensureSheet_(SpreadsheetApp.getActiveSpreadsheet(), WA_ERRORS_SHEET, WA_ERRORS_HEADERS);
+      sheet.appendRow([now_(), text_(where), text_((err && err.message) ? err.message : String(err)), text_(details || '')]);
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (e) {
+    try { console.error(where, err); } catch (ignore) { /* nothing more we can do */ }
+  }
 }
 
 function appendCallLog_(ss, b) {
@@ -231,6 +341,10 @@ function ensureSheet_(ss, name, headers) {
   if (sheet.getLastRow() === 0) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
     sheet.setFrozenRows(1);
+  } else if (sheet.getLastColumn() < headers.length) {
+    // New columns are only ever appended at the end, so existing data never shifts.
+    var have = sheet.getLastColumn();
+    sheet.getRange(1, have + 1, 1, headers.length - have).setValues([headers.slice(have)]).setFontWeight('bold');
   }
   return sheet;
 }

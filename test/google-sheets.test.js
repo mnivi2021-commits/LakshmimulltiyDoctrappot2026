@@ -9,16 +9,23 @@ const vm = require('vm');
 
 const CODE = fs.readFileSync(path.join(__dirname, '..', 'google-sheets', 'Code.gs'), 'utf8');
 
-function makeEnv({ secret = 'sheet-secret', lockFails = false, props = {}, files = [], stubs = {} } = {}) {
+function makeEnv({ secret = 'sheet-secret', lockFails = false, props = {}, files = [], stubs = {}, mailFails = false } = {}) {
   const sheets = new Map();
+  const mails = [];
   const locks = { held: 0, max: 0, released: 0 };
   function makeSheet(name) {
     const sheet = {
       name, rows: [], frozen: 0, boldHeader: false,
       getLastRow: () => sheet.rows.length,
+      getLastColumn: () => (sheet.rows[0] || []).length,
       appendRow: (r) => { sheet.rows.push(Array.from(r, String)); }, // copy out of the vm realm
       getRange: (r, c, nr, nc) => ({
-        setValues: (vals) => { sheet.rows[r - 1] = Array.from(vals[0], String).slice(0, nc); return { setFontWeight: (w) => { sheet.boldHeader = w === 'bold'; } }; },
+        setValues: (vals) => {
+          const row = sheet.rows[r - 1] || [];
+          Array.from(vals[0], String).slice(0, nc).forEach((v, i) => { row[c - 1 + i] = v; });
+          sheet.rows[r - 1] = row;
+          return { setFontWeight: (w) => { sheet.boldHeader = w === 'bold'; } };
+        },
       }),
       setFrozenRows: (n) => { sheet.frozen = n; },
     };
@@ -43,6 +50,7 @@ function makeEnv({ secret = 'sheet-secret', lockFails = false, props = {}, files
       createTextOutput: (s) => ({ body: s, setMimeType(m) { this.mime = m; return this; } }),
     },
     Utilities: { formatDate: (d, tz, fmt) => `${tz}|${fmt}` },
+    MailApp: { sendEmail: (o) => { if (mailFails) throw new Error('Service invoked too many times for one day: email.'); mails.push(JSON.parse(JSON.stringify(o))); } },
     JSON, String, Object, Array, Date,
   };
   Object.assign(ctx, stubs);
@@ -53,7 +61,7 @@ function makeEnv({ secret = 'sheet-secret', lockFails = false, props = {}, files
     const out = ctx.doPost({ postData: { contents: typeof body === 'string' ? body : JSON.stringify(body) }, parameter: query });
     return { json: JSON.parse(out.body), mime: out.mime };
   };
-  return { ctx, sheets, locks, post };
+  return { ctx, sheets, locks, post, mails };
 }
 
 const REQUEST = {
@@ -74,11 +82,11 @@ test('request → "Requests" sheet with headers, frozen bold header, IST timesta
   assert.deepEqual(r.json, { success: true, say: 'Thank you. I have noted your details. Our hospital staff will call you back to confirm your appointment.' });
   const s = env.sheets.get('Requests');
   assert.deepEqual(s.rows[0], ['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time',
-    'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status']);
+    'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email']);
   assert.equal(s.frozen, 1);
   assert.equal(s.boldHeader, true);
   assert.deepEqual(s.rows[1], ['Asia/Kolkata|yyyy-MM-dd HH:mm:ss', 'Ravi Kumar', '9876543210', 'Mr. Vijul – Orthopaedic', '2026-10-12',
-    '10:30 AM', 'Knee pain', 'New', 'Tamil', "'+919876543210", 'CA123', 'AI call – system offline', 'New']);
+    '10:30 AM', 'Knee pain', 'New', 'Tamil', "'+919876543210", 'CA123', 'AI call – system offline', 'New', '']);
   assert.equal(env.sheets.has('Call Log'), false);
   assert.equal(env.locks.released, 1);
 });
@@ -195,4 +203,68 @@ test('setupSheets creates all four sheets with headers', () => {
   env.ctx.setupSheets();
   assert.deepEqual([...env.sheets.keys()].sort(), ['Call Log', 'Requests', 'WA Errors', 'WA Sessions']);
   assert.deepEqual(env.sheets.get('WA Sessions').rows[0], ['WhatsApp number', 'Step', 'Data (JSON)', 'Updated']);
+});
+
+// ---------------- Email column + confirmation email (Website chat) ----------------
+const WEB = {
+  secret: 'sheet-secret', type: 'request', source: 'Website chat', status: 'New', patient_name: 'Anitha <b>R</b>', mobile: '9123456789',
+  doctor: 'Ms. Nivi – Heart Specialist', preferred_date: '2026-10-19', preferred_time: 'Evening', reason: 'BP check',
+  patient_type: 'new', language: 'English', email: 'anitha@example.com',
+};
+
+test('Website chat request with email: saved in the last "Email" column and a confirmation email is sent', () => {
+  const env = makeEnv();
+  assert.equal(env.post(WEB).json.success, true);
+  const row = env.sheets.get('Requests').rows[1];
+  assert.equal(row.length, 14);
+  assert.equal(row[13], 'anitha@example.com');
+  assert.equal(row[11], 'Website chat');
+  assert.equal(env.mails.length, 1);
+  const m = env.mails[0];
+  assert.equal(m.to, 'anitha@example.com');
+  assert.match(m.subject, /Lakshmi Multispecialty Hospital/);
+  for (const part of ['Lakshmi Multispecialty Hospital', 'Ms. Nivi – Heart Specialist', '2026-10-19', 'Evening',
+    'This is a request, not a confirmed booking. Our staff will call you on 9123456789 to confirm.', 'லட்சுமி மல்டிஸ்பெஷாலிட்டி', 'மாலை']) {
+    assert.ok(m.body.includes(part), 'plain text: ' + part);
+  }
+  assert.ok(m.htmlBody.includes('Anitha &lt;b&gt;R&lt;/b&gt;'), 'patient name is HTML-escaped');
+  assert.ok(!m.htmlBody.includes('<b>R</b>'));
+  assert.ok(m.htmlBody.includes('9123456789'));
+  assert.equal(env.locks.held, 0, 'lock released (email sent outside the lock)');
+});
+
+test('no email is sent without a valid email, or for non-website sources', () => {
+  for (const extra of [{ email: '' }, { email: 'not-an-email' }, { email: 'a@b' }, { email: 'x@y.com\nBcc: evil@z.com' }]) {
+    const env = makeEnv();
+    env.post({ ...WEB, ...extra });
+    assert.equal(env.mails.length, 0, JSON.stringify(extra));
+    assert.equal(env.sheets.get('Requests').rows[1][13], '', 'invalid email not stored');
+  }
+  const env = makeEnv();
+  env.post({ ...WEB, source: 'AI call – system offline' });
+  env.post({ ...WEB, source: 'WhatsApp' });
+  assert.equal(env.mails.length, 0);
+  assert.equal(env.sheets.get('Requests').rows[1][13], 'anitha@example.com', 'email still stored for other sources');
+});
+
+test('email failure is logged to "WA Errors" and the request is still saved', () => {
+  const env = makeEnv({ mailFails: true });
+  assert.equal(env.post(WEB).json.success, true);
+  assert.equal(env.sheets.get('Requests').rows.length, 2);
+  const err = env.sheets.get('WA Errors').rows[1];
+  assert.equal(err[1], 'email');
+  assert.match(err[2], /too many times/);
+});
+
+test('existing 13-column "Requests" sheet gets the "Email" header appended (no columns shift)', () => {
+  const env = makeEnv();
+  const old = env.ctx.SpreadsheetApp.getActiveSpreadsheet().insertSheet('Requests');
+  old.rows.push(['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time', 'Reason', 'New/Existing',
+    'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status']);
+  old.rows.push(['2026-10-01 10:00:00', 'Old Row', '9000000000', 'Mr. Vijul', '', '', '', 'New', '', '', '', 'AI call – system offline', 'New']);
+  env.post(WEB);
+  assert.equal(old.rows[0][12], 'Status');
+  assert.equal(old.rows[0][13], 'Email');
+  assert.equal(old.rows[1][1], 'Old Row', 'old data untouched');
+  assert.equal(old.rows[2][13], 'anitha@example.com');
 });

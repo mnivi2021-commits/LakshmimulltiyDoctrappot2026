@@ -63,25 +63,31 @@ test('docs/index.html (GitHub Pages / Vercel copy): chat box present, posts to W
   assert.ok(html.includes('Chat with us') && html.includes('அரட்டை'));
   // posts to the Worker's /webchat route, with the honeypot field
   assert.match(html, /const WEBCHAT_URL = "https:\/\/lakshmi-sheets\.mnivi2021\.workers\.dev\/webchat";/);
-  assert.equal((html.match(/WEBCHAT_URL =/g) || []).length, 1, 'one shared setting for form + chat');
+  assert.equal((html.match(/WEBCHAT_URL =/g) || []).length, 1, 'one shared setting');
   assert.match(html, /website: honeypot\.value \|\| ''/);
   assert.match(html, /name="website"/);
-  // the appointment form saves through the same Worker route (no WhatsApp)
+  // only the chat box saves (text/plain → no CORS preflight)
   assert.match(html, /fetch\(WEBCHAT_URL, \{\s*method: 'POST', headers: \{ 'Content-Type': 'text\/plain;charset=UTF-8' \}/);
-  assert.equal((html.match(/fetch\(WEBCHAT_URL/g) || []).length, 2, 'form and chat both post to /webchat');
-  assert.match(html, /Send request \/ <span lang="ta">கோரிக்கை அனுப்பு<\/span>/);
-  assert.match(html, /Fill this in and our staff will call you back to confirm\./);
-  // WhatsApp buttons → bot TEST number only (wa.me format, "Hi" pre-typed), marked as test mode
-  assert.match(html, /const WHATSAPP_URL = "https:\/\/wa\.me\/15556564409\?text=Hi";/);
-  assert.deepEqual([...new Set(html.match(/wa\.me\/\d+/g))], ['wa.me/15556564409'], 'only the bot test number is used for WhatsApp');
-  assert.ok(!/api\.whatsapp\.com/.test(html));
-  assert.ok((html.match(/class="round-action js-wa"/g) || []).length >= 2, 'WhatsApp buttons in hero and contact area');
-  assert.match(html, /WhatsApp chat is in test mode/);
-  assert.match(html, /\[wa, 'q-wa', t\('whatsapp'\), '#i-wa'\]/, 'chat failure fallback offers WhatsApp');
-  // the form never opens WhatsApp – it only posts to /webchat
-  const formCode = html.slice(html.indexOf("const form = document.getElementById('requestForm')"), html.indexOf('// ===== Website chat box'));
-  assert.ok(formCode.length > 1000 && !/wa\.me|WHATSAPP_URL|window\.open/.test(formCode), 'form code does not use WhatsApp');
-  assert.match(html, /class="[^"]*js-call/, 'Call button kept');
+  assert.equal((html.match(/fetch\(WEBCHAT_URL/g) || []).length, 1, 'chat box is the only sender');
+  // the bottom "Appointment request" form is removed – the chat box replaces it
+  assert.ok(!/id="requestForm"|id="request"|id="f-name"|id="f-mobile"|id="f-doctor"|id="f-email"|Send request/.test(html), 'form removed');
+  assert.match(html, /<a href="#chat" data-open-chat[^>]*>Chat box<\/a>/, 'menu link opens the chat box');
+  assert.match(html, /window\.LMHChat\.open\(label, b\)/, 'doctor cards open the chat with that doctor');
+  assert.match(html, /window\.LMH_DOCTORS = doctors\.map/, 'chat reads the page doctor list');
+  // no WhatsApp anywhere (buttons, icon, links, labels, notes, text)
+  assert.ok(!/wa\.me|api\.whatsapp\.com|whatsapp|வாட்ஸ்அப்/i.test(html), 'no WhatsApp on the page');
+  // hero = Call + Chat box (opens the same chat panel); floating chat + call kept
+  assert.match(html, /<button type="button" class="round-action" data-open-chat[^>]*aria-controls="chatPanel"/);
+  assert.match(html, /<span class="lbl">Chat box<small lang="ta">அரட்டை<\/small><\/span>/);
+  assert.match(html, /Tap the phone to call our receptionist, or use the chat box to send a request\./);
+  assert.match(html, /class="round-action js-call"/);
+  assert.match(html, /id="chatOpen"/);
+  assert.match(html, /class="f-call js-call"/);
+  // optional email in the chat box, sent in the payload
+  assert.match(html, /If you want a confirmation email, please give your email ID\. It’s optional\./);
+  assert.match(html, /email: d\.email \|\| ''/);
+  assert.match(html, /A copy has been emailed to you/);
+  assert.ok(!/window\.open/.test(html), 'nothing opens other apps');
   // every inline script still parses
   for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new Function(code));
   // no phone number shown as visible text (108 allowed)

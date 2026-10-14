@@ -21,6 +21,7 @@ function makeEnv({ today = '2026-10-09', props = {}, api = 'ok' } = {}) {
     const sh = {
       name, rows: [], frozen: 0,
       getLastRow: () => sh.rows.length,
+      getLastColumn: () => (sh.rows[0] || []).length,
       appendRow: (r) => { sh.rows.push(Array.from(r, String)); },
       getDataRange: () => ({ getValues: () => sh.rows.map((r) => r.slice()) }),
       getRange: (r, c, nr, nc) => ({
@@ -40,6 +41,7 @@ function makeEnv({ today = '2026-10-09', props = {}, api = 'ok' } = {}) {
     CacheService: { getScriptCache: () => ({ get: (k) => cache.get(k) ?? null, put: (k, v) => cache.set(k, v), remove: (k) => cache.delete(k) }) },
     ContentService: { MimeType: { JSON: 'application/json', TEXT: 'text/plain' }, createTextOutput: (s) => ({ body: s, setMimeType(m) { this.mime = m; return this; } }) },
     Utilities: { formatDate: (d, tz, fmt) => (fmt === 'yyyy-MM-dd' ? today : `${tz}|${fmt}`) },
+    MailApp: { sendEmail: () => { throw new Error('WhatsApp requests must not send email'); } },
     UrlFetchApp: {
       fetch: (url, opts) => {
         if (state.api === 'throw') throw new Error('DNS error');

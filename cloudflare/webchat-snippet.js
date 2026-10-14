@@ -12,7 +12,7 @@
       let d = {};
       try { d = JSON.parse(await req.text()); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
       if (d.website) return json({ ok: true }); // honeypot: silently drop bots
-      const allow = ["patient_name","mobile","doctor","preferred_date","preferred_time","reason","patient_type","language"];
+      const allow = ["patient_name","mobile","doctor","preferred_date","preferred_time","reason","patient_type","language","email"];
       const out = { type: "request", source: "Website chat", status: "New" };
       for (const k of allow) if (d[k] != null) out[k] = String(d[k]).slice(0, 300);
       const digits = String(out.mobile || "").replace(/\D/g, "").slice(-10);
