@@ -144,6 +144,42 @@
   .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); width: min(92vw, 520px); background: var(--ink); color: #fff; padding: 14px 18px; border-radius: 14px; font-weight: 600; z-index: 60; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
   .toast[hidden] { display: none; }
 
+  /* ---------- Chat with us (website chat box) ---------- */
+  .float .f-chat { background: var(--brand); color: #fff; position: relative; font-size: 1.7rem; line-height: 1; }
+  .float .f-chat .chat-label { position: absolute; right: 74px; top: 50%; transform: translateY(-50%); white-space: nowrap; background: #fff; color: var(--brand); border: 2px solid var(--brand); border-radius: 999px; padding: 6px 12px; font: 700 .9rem/1.2 var(--font); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+  .chat-panel { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; background: #fff; }
+  .chat-panel[hidden] { display: none; }
+  @media (min-width: 640px) {
+    .chat-panel { inset: auto 20px 20px auto; width: 400px; height: min(640px, calc(100vh - 40px)); border-radius: var(--radius); border: 1px solid var(--line); box-shadow: 0 16px 48px rgba(0,0,0,.28); overflow: hidden; }
+  }
+  .chat-head { display: flex; align-items: center; gap: 10px; background: var(--brand); color: #fff; padding: 12px 14px; }
+  .chat-head h2 { color: #fff; font-size: 1.1rem; margin: 0; flex: 1; line-height: 1.25; }
+  .chat-head h2 small { display: block; font-size: .8rem; font-weight: 600; color: #d9efe9; }
+  .chat-close { width: 48px; height: 48px; border-radius: 12px; border: 0; background: rgba(255,255,255,.16); color: #fff; font-size: 1.6rem; cursor: pointer; }
+  .chat-log { flex: 1; overflow-y: auto; padding: 14px 12px; background: var(--mint); display: flex; flex-direction: column; gap: 10px; }
+  .bubble { max-width: 86%; padding: 10px 14px; border-radius: 16px; font-size: 1.02rem; line-height: 1.45; white-space: pre-line; word-wrap: break-word; }
+  .bubble.bot { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .bubble.user { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: 4px; }
+  .bubble.ok { border: 2px solid #1f7a45; background: #eef8f1; }
+  .bubble.err { border: 2px solid var(--danger); background: #fdecea; }
+  .chat-quick { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; background: #fff; border-top: 1px solid var(--line); }
+  .chat-quick:empty { display: none; }
+  .chat-quick button, .chat-quick a { min-height: 48px; padding: 10px 16px; border-radius: 999px; border: 2px solid var(--brand); background: #fff; color: var(--brand); font: 700 1rem/1.2 var(--font); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+  .chat-quick button.primary { background: var(--brand); color: #fff; }
+  .chat-quick button:disabled { opacity: .55; cursor: wait; }
+  .chat-quick a.q-call { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .chat-quick a.q-wa { background: var(--wa); border-color: var(--wa); color: #fff; }
+  .chat-quick svg { width: 24px; height: 24px; }
+  .chat-form { display: flex; gap: 8px; padding: 10px 12px; background: #fff; border-top: 1px solid var(--line); }
+  .chat-form[hidden] { display: none; }
+  .chat-form input { flex: 1; min-width: 0; }
+  .chat-form button { flex: none; min-height: 56px; padding: 0 18px; border-radius: 12px; border: 0; background: var(--brand); color: #fff; font: 700 1rem var(--font); cursor: pointer; }
+  .chat-err { color: var(--danger); font-weight: 600; font-size: .95rem; padding: 0 12px 8px; background: #fff; }
+  .chat-err:empty { display: none; }
+  .chat-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  body.chat-open { overflow: hidden; }
+  @media (min-width: 640px) { body.chat-open { overflow: auto; } }
+
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     .round-action .disc { transition: none; }
@@ -300,9 +336,27 @@
 </footer>
 
 <div class="float" aria-label="Quick contact">
+  <button type="button" class="f-chat" id="chatOpen" aria-haspopup="dialog" aria-controls="chatPanel" aria-label="Chat with us – அரட்டை"><span aria-hidden="true">💬</span><span class="chat-label" aria-hidden="true">Chat with us / <span lang="ta">அரட்டை</span></span></button>
   <a class="f-call js-call" href="#" aria-label="Call the hospital to book an appointment"><svg aria-hidden="true"><use href="#i-phone"/></svg></a>
   <a class="f-wa js-wa" href="#" aria-label="Chat with the hospital on WhatsApp" rel="noopener"><svg aria-hidden="true"><use href="#i-wa"/></svg></a>
 </div>
+
+<section class="chat-panel" id="chatPanel" role="dialog" aria-modal="true" aria-labelledby="chatTitle" hidden>
+  <header class="chat-head">
+    <svg viewBox="0 0 48 48" width="36" height="36" aria-hidden="true"><rect width="48" height="48" rx="13" fill="#fff"/><path fill="#0F4C45" d="M20 9h8v11h11v8H28v11h-8V28H9v-8h11z"/><circle cx="24" cy="24" r="3.4" fill="#E8A317"/></svg>
+    <h2 id="chatTitle">Chat with us <small lang="ta">அரட்டை · Appointment request</small></h2>
+    <button type="button" class="chat-close" id="chatClose" aria-label="Close chat">×</button>
+  </header>
+  <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions"></div>
+  <div class="chat-err" id="chatErr" role="alert"></div>
+  <div class="chat-quick" id="chatQuick"></div>
+  <form class="chat-form" id="chatForm" hidden novalidate>
+    <label class="sr" for="chatInput" id="chatInputLabel">Your answer</label>
+    <input id="chatInput" autocomplete="off">
+    <input class="chat-hp" id="chatWebsite" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button type="submit" id="chatSend">Send</button>
+  </form>
+</section>
 
 <div class="toast" id="toast" role="alert" hidden></div>
 
@@ -493,6 +547,316 @@
       if (!win) window.location.href = url;
       statusEl.className = 'status info';
       statusEl.textContent = 'WhatsApp is opening with your details. Press send there. This is a request, not a confirmed booking – our staff will reply to confirm.';
+    });
+  })();
+</script>
+
+<script>
+  // ===== Website chat box ("Chat with us") =====
+  // Fixed questions, no AI. Sends the request to the Cloudflare Worker, which
+  // holds the secret and saves it to the "Requests" Google Sheet. Nothing
+  // personal is stored in the browser – the conversation lives in memory only.
+  (function () {
+    'use strict';
+    var WEBCHAT_URL = 'https://lakshmi-sheets.mnivi2021.workers.dev/webchat';
+    var TIMEOUT_MS = 15000;
+
+    var T = {
+      en: {
+        askName: 'Please type the patient’s full name.',
+        badName: 'Please enter a name of 2 to 80 letters.',
+        askMobile: 'Please type the 10-digit mobile number.',
+        badMobile: 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8 or 9.',
+        askDoctor: 'Which doctor would you like to see?',
+        askDate: 'Choose your preferred date (Monday to Saturday).',
+        badDate: 'Please choose today or a later date.',
+        sunday: 'We are closed on Sunday. Please choose another day.',
+        askTime: 'Morning or evening?', morning: 'Morning', evening: 'Evening',
+        askReason: 'Reason for the visit, in a few words (optional).', skip: 'Skip',
+        askType: 'Is this a new patient or an existing patient?', newP: 'New patient', existingP: 'Existing patient',
+        summary: 'Please check your request:', fName: 'Patient', fMobile: 'Mobile', fDoctor: 'Doctor', fDate: 'Date',
+        fTime: 'Time', fReason: 'Reason', fType: 'Patient type', none: '–',
+        note: 'This is a request, not a confirmed appointment.', confirm: 'Confirm', edit: 'Edit',
+        editing: 'No problem – let’s update the details.', sending: 'Sending…',
+        fail: 'Sorry, we could not send your request right now. Please call us or send us a WhatsApp message.',
+        retry: 'Try again', again: 'Start again', send: 'Send', call: 'Call', whatsapp: 'WhatsApp',
+        phName: 'Patient name', phMobile: '10-digit mobile', phReason: 'Reason (optional)', phDate: 'Date',
+      },
+      ta: {
+        askName: 'நோயாளியின் முழுப் பெயரை தட்டச்சு செய்யவும்.',
+        badName: '2 முதல் 80 எழுத்துகள் கொண்ட பெயரை உள்ளிடவும்.',
+        askMobile: '10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.',
+        badMobile: '6, 7, 8 அல்லது 9 இல் தொடங்கும் சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.',
+        askDoctor: 'எந்த மருத்துவரைச் சந்திக்க விரும்புகிறீர்கள்?',
+        askDate: 'விருப்பமான தேதியைத் தேர்வு செய்யவும் (திங்கள் – சனி).',
+        badDate: 'இன்று அல்லது அதற்குப் பிந்தைய தேதியைத் தேர்வு செய்யவும்.',
+        sunday: 'ஞாயிறு விடுமுறை. வேறு நாளைத் தேர்வு செய்யவும்.',
+        askTime: 'காலையா, மாலையா?', morning: 'காலை', evening: 'மாலை',
+        askReason: 'வருகைக்கான காரணம் (விருப்பம்).', skip: 'தவிர்',
+        askType: 'புதிய நோயாளியா, பழைய நோயாளியா?', newP: 'புதிய நோயாளி', existingP: 'பழைய நோயாளி',
+        summary: 'உங்கள் கோரிக்கையைச் சரிபார்க்கவும்:', fName: 'நோயாளி', fMobile: 'மொபைல்', fDoctor: 'மருத்துவர்', fDate: 'தேதி',
+        fTime: 'நேரம்', fReason: 'காரணம்', fType: 'நோயாளி வகை', none: '–',
+        note: 'இது கோரிக்கை மட்டுமே; உறுதிசெய்யப்பட்ட சந்திப்பு அல்ல.', confirm: 'உறுதி செய்', edit: 'மாற்று',
+        editing: 'சரி – விவரங்களை மாற்றலாம்.', sending: 'அனுப்புகிறது…',
+        fail: 'மன்னிக்கவும், உங்கள் கோரிக்கையை இப்போது அனுப்ப முடியவில்லை. எங்களை அழைக்கவும் அல்லது வாட்ஸ்அப் செய்யவும்.',
+        retry: 'மீண்டும் முயற்சி', again: 'மீண்டும் தொடங்கு', send: 'அனுப்பு', call: 'அழைக்க', whatsapp: 'வாட்ஸ்அப்',
+        phName: 'நோயாளியின் பெயர்', phMobile: '10 இலக்க மொபைல்', phReason: 'காரணம் (விருப்பம்)', phDate: 'தேதி',
+      },
+    };
+    var WELCOME = 'Welcome to Lakshmi Multispecialty Hospital! I can take your appointment request.\nPlease choose your language.\n\nலட்சுமி மல்டிஸ்பெஷாலிட்டி மருத்துவமனைக்கு வரவேற்கிறோம்! மொழியைத் தேர்ந்தெடுக்கவும்.';
+    var SUCCESS = 'Thank you! Your request is noted. Our hospital staff will call you back shortly.\n\nநன்றி! உங்கள் கோரிக்கை பதிவுசெய்யப்பட்டது. எங்கள் மருத்துவமனை ஊழியர்கள் விரைவில் உங்களை அழைப்பார்கள்.';
+
+    var panel = document.getElementById('chatPanel');
+    var openBtn = document.getElementById('chatOpen');
+    var closeBtn = document.getElementById('chatClose');
+    var log = document.getElementById('chatLog');
+    var quick = document.getElementById('chatQuick');
+    var form = document.getElementById('chatForm');
+    var input = document.getElementById('chatInput');
+    var inputLabel = document.getElementById('chatInputLabel');
+    var sendBtn = document.getElementById('chatSend');
+    var errEl = document.getElementById('chatErr');
+    var honeypot = document.getElementById('chatWebsite');
+
+    var S = null; // { lang, step, data } – memory only
+    var t = function (k) { return T[(S && S.lang) || 'en'][k]; };
+
+    function bubble(text, who, cls) {
+      var b = document.createElement('div');
+      b.className = 'bubble ' + who + (cls ? ' ' + cls : '');
+      b.textContent = text; // never innerHTML with user data
+      log.appendChild(b);
+      log.scrollTop = log.scrollHeight;
+      return b;
+    }
+    function scrollLog() {
+      log.scrollTop = log.scrollHeight;
+      requestAnimationFrame(function () { log.scrollTop = log.scrollHeight; });
+    }
+    function setError(msg) { errEl.textContent = msg || ''; }
+    function clearUI() { quick.textContent = ''; form.hidden = true; setError(''); }
+    function quickButtons(list) {
+      quick.textContent = '';
+      list.forEach(function (o) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = o.label;
+        if (o.primary) b.className = 'primary';
+        if (o.lang) b.lang = o.lang;
+        b.addEventListener('click', function () { o.onClick(b); });
+        quick.appendChild(b);
+      });
+      var first = quick.querySelector('button');
+      if (first && !panel.hidden) first.focus();
+      scrollLog();
+    }
+    function askInput(kind, placeholder) {
+      form.hidden = false;
+      input.value = '';
+      input.type = kind === 'date' ? 'date' : kind === 'tel' ? 'tel' : 'text';
+      input.inputMode = kind === 'tel' ? 'numeric' : 'text';
+      input.maxLength = kind === 'tel' ? 14 : kind === 'reason' ? 300 : 80;
+      input.removeAttribute('min');
+      if (kind === 'date') input.min = todayLocal();
+      input.placeholder = placeholder || '';
+      inputLabel.textContent = placeholder || 'Your answer';
+      sendBtn.textContent = t('send');
+      if (!panel.hidden) input.focus();
+      scrollLog();
+    }
+    function todayLocal() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function prettyDate(iso) {
+      var p = iso.split('-').map(Number);
+      var d = new Date(p[0], p[1] - 1, p[2]);
+      return d.toLocaleDateString(S.lang === 'ta' ? 'ta-IN' : 'en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    function doctorList() {
+      var opts = document.querySelectorAll('#f-doctor option');
+      var out = [];
+      for (var i = 0; i < opts.length; i++) if (opts[i].value) out.push(opts[i].value);
+      return out;
+    }
+
+    // ---------- flow ----------
+    function start() {
+      S = { lang: null, step: 'lang', data: {} };
+      log.textContent = '';
+      clearUI();
+      bubble(WELCOME, 'bot');
+      quickButtons([
+        { label: 'English', onClick: function () { pickLang('en', 'English'); } },
+        { label: 'தமிழ்', lang: 'ta', onClick: function () { pickLang('ta', 'தமிழ்'); } },
+      ]);
+    }
+    function pickLang(lang, label) {
+      bubble(label, 'user');
+      S.lang = lang;
+      goName();
+    }
+    function goName() { S.step = 'name'; clearUI(); bubble(t('askName'), 'bot'); askInput('text', t('phName')); }
+    function goMobile() { S.step = 'mobile'; clearUI(); bubble(t('askMobile'), 'bot'); askInput('tel', t('phMobile')); }
+    function goDoctor() {
+      S.step = 'doctor'; clearUI(); bubble(t('askDoctor'), 'bot');
+      quickButtons(doctorList().map(function (name) {
+        return { label: name, onClick: function () { bubble(name, 'user'); S.data.doctor = name; goDate(); } };
+      }));
+    }
+    function goDate() { S.step = 'date'; clearUI(); bubble(t('askDate'), 'bot'); askInput('date', t('phDate')); }
+    function goTime() {
+      S.step = 'time'; clearUI(); bubble(t('askTime'), 'bot');
+      quickButtons([
+        { label: t('morning'), onClick: function () { bubble(t('morning'), 'user'); S.data.preferred_time = 'Morning'; goReason(); } },
+        { label: t('evening'), onClick: function () { bubble(t('evening'), 'user'); S.data.preferred_time = 'Evening'; goReason(); } },
+      ]);
+    }
+    function goReason() {
+      S.step = 'reason'; clearUI(); bubble(t('askReason'), 'bot'); askInput('reason', t('phReason'));
+      quickButtons([{ label: t('skip'), onClick: function () { bubble(t('skip'), 'user'); S.data.reason = ''; goType(); } }]);
+      input.focus();
+    }
+    function goType() {
+      S.step = 'type'; clearUI(); bubble(t('askType'), 'bot');
+      quickButtons([
+        { label: t('newP'), onClick: function () { bubble(t('newP'), 'user'); S.data.patient_type = 'new'; goSummary(); } },
+        { label: t('existingP'), onClick: function () { bubble(t('existingP'), 'user'); S.data.patient_type = 'existing'; goSummary(); } },
+      ]);
+    }
+    function summaryText() {
+      var d = S.data;
+      return t('summary') + '\n' +
+        t('fName') + ': ' + d.patient_name + '\n' +
+        t('fMobile') + ': ' + d.mobile + '\n' +
+        t('fDoctor') + ': ' + d.doctor + '\n' +
+        t('fDate') + ': ' + prettyDate(d.preferred_date) + '\n' +
+        t('fTime') + ': ' + (d.preferred_time === 'Morning' ? t('morning') : t('evening')) + '\n' +
+        t('fReason') + ': ' + (d.reason || t('none')) + '\n' +
+        t('fType') + ': ' + (d.patient_type === 'existing' ? t('existingP') : t('newP')) + '\n\n' + t('note');
+    }
+    function goSummary() {
+      S.step = 'summary'; clearUI();
+      bubble(summaryText(), 'bot');
+      quickButtons([
+        { label: t('confirm'), primary: true, onClick: submit },
+        { label: t('edit'), onClick: function () { bubble(t('edit'), 'user'); bubble(t('editing'), 'bot'); S.data = {}; goName(); } },
+      ]);
+    }
+
+    function submit(btn) {
+      if (S.step === 'sending') return;
+      S.step = 'sending';
+      quick.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      btn.textContent = t('sending');
+      var d = S.data;
+      var payload = {
+        patient_name: d.patient_name, mobile: d.mobile, doctor: d.doctor, preferred_date: d.preferred_date,
+        preferred_time: d.preferred_time, reason: d.reason || '', patient_type: d.patient_type,
+        language: S.lang === 'ta' ? 'Tamil' : 'English', website: honeypot.value || '',
+      };
+      var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
+      // text/plain keeps this a "simple" cross-site request (no CORS preflight);
+      // the Worker parses the body with JSON.parse(await req.text()).
+      fetch(WEBCHAT_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify(payload), signal: ctrl ? ctrl.signal : undefined,
+      })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return r.ok && j && j.ok === true; }); })
+        .catch(function () { return false; })
+        .then(function (ok) {
+          clearTimeout(timer);
+          ok ? done() : failed();
+        });
+    }
+    function done() {
+      S.step = 'done'; clearUI();
+      bubble(SUCCESS, 'bot', 'ok');
+      quickButtons([{ label: t('again'), onClick: start }]);
+    }
+    function failed() {
+      S.step = 'summary'; clearUI();
+      bubble(t('fail'), 'bot', 'err');
+      quick.textContent = '';
+      // Reuse the page's own Call / WhatsApp links (never show a number as text).
+      var call = document.querySelector('.js-call');
+      var wa = document.querySelector('.js-wa');
+      [[call, 'q-call', t('call'), '#i-phone'], [wa, 'q-wa', t('whatsapp'), '#i-wa']].forEach(function (x) {
+        if (!x[0]) return;
+        var href = x[0].getAttribute('href');
+        if (!href || href === '#') return; // WhatsApp not configured yet
+        var a = document.createElement('a');
+        a.className = x[1]; a.href = href;
+        if (/^https:/.test(href)) { a.target = '_blank'; a.rel = 'noopener'; }
+        a.innerHTML = '<svg aria-hidden="true"><use href="' + x[3] + '"/></svg>';
+        a.appendChild(document.createTextNode(x[2]));
+        quick.appendChild(a);
+      });
+      var retry = document.createElement('button');
+      retry.type = 'button'; retry.className = 'primary'; retry.textContent = t('retry');
+      retry.addEventListener('click', function () { submit(retry); });
+      var again = document.createElement('button');
+      again.type = 'button'; again.textContent = t('again');
+      again.addEventListener('click', start);
+      quick.appendChild(retry); quick.appendChild(again);
+      retry.focus();
+      scrollLog();
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = input.value.trim().replace(/\s+/g, ' ');
+      setError('');
+      if (S.step === 'name') {
+        if (v.length < 2 || v.length > 80) return setError(t('badName'));
+        bubble(v, 'user'); S.data.patient_name = v; return goMobile();
+      }
+      if (S.step === 'mobile') {
+        var digits = v.replace(/\D/g, '');
+        if (digits.length === 12 && digits.indexOf('91') === 0) digits = digits.slice(2);
+        if (digits.length === 11 && digits.charAt(0) === '0') digits = digits.slice(1);
+        if (!/^[6-9]\d{9}$/.test(digits)) return setError(t('badMobile'));
+        bubble(digits, 'user'); S.data.mobile = digits; return goDoctor();
+      }
+      if (S.step === 'date') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || v < todayLocal()) return setError(t('badDate'));
+        var p = v.split('-').map(Number);
+        if (new Date(p[0], p[1] - 1, p[2]).getDay() === 0) return setError(t('sunday'));
+        S.data.preferred_date = v; bubble(prettyDate(v), 'user'); return goTime();
+      }
+      if (S.step === 'reason') {
+        S.data.reason = v.slice(0, 300);
+        bubble(v || t('skip'), 'user'); return goType();
+      }
+    });
+
+    // ---------- open / close, keyboard ----------
+    function openChat() {
+      panel.hidden = false;
+      document.body.classList.add('chat-open');
+      openBtn.setAttribute('aria-expanded', 'true');
+      if (!S) start();
+      var target = (!form.hidden && input) || quick.querySelector('button, a') || closeBtn;
+      setTimeout(function () { target.focus(); }, 30);
+    }
+    function closeChat() {
+      panel.hidden = true;
+      document.body.classList.remove('chat-open');
+      openBtn.setAttribute('aria-expanded', 'false');
+      openBtn.focus();
+    }
+    openBtn.addEventListener('click', openChat);
+    closeBtn.addEventListener('click', closeChat);
+    panel.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); closeChat(); return; }
+      if (e.key !== 'Tab') return; // keep keyboard focus inside the dialog
+      var f = panel.querySelectorAll('button:not([disabled]), a[href], input:not(.chat-hp):not([type=hidden])');
+      var items = Array.prototype.filter.call(f, function (el) { return el.offsetParent !== null; });
+      if (!items.length) return;
+      var first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     });
   })();
 </script>
