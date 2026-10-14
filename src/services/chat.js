@@ -233,11 +233,14 @@ async function nextBookStep(r, s) {
   if (!d.reason) { s.step = 'reason'; return r.say(t.ask_reason); }
   s.step = 'confirm';
   const f = t.field;
+  // Show every detail the patient gave and ask if it is correct; nothing is saved until "Yes".
   r.card(t.confirm_q, [
-    [f.doctor, doctor.name], [f.dept, doctor.label[r.lang] || doctor.department], [f.date, clock.prettyDate(d.date)],
-    [f.time, clock.prettyTime(d.time)], [f.patient, d.patient_name], ['📱', v.maskMobile(d.mobile)],
+    [f.patient, d.patient_name], [f.mobile, d.mobile],
+    [f.doctor, doctor.name], [f.dept, doctor.label[r.lang] || doctor.department],
+    [f.date, clock.prettyDate(d.date)], [f.time, clock.prettyTime(d.time)],
+    [f.reason, d.reason], [f.ptype, d.patient_type === 'existing' ? t.existing_patient : t.new_patient],
   ]);
-  r.btn(`✅ ${t.yes}`, 'yes').btn(t.other_date, 'other_date').btn(t.no, 'no');
+  r.btn(`✅ ${t.yes_correct}`, 'yes').btn(t.other_date, 'other_date').btn(t.no, 'no');
 }
 
 async function doBook(r, s) {

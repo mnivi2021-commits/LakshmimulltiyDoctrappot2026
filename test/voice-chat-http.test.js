@@ -140,7 +140,10 @@ test('chat: full booking flow shows only DB slots and confirms with LMH number',
   r = await say(r, { message: '9876511111' });
   r = await say(r, { action: 'ptype:new' });
   r = await say(r, { message: 'Knee pain' });
-  assert.equal(r.messages[0].title, 'Shall I confirm this appointment?');
+  assert.equal(r.messages[0].title, 'Please check your details. Are they correct?');
+  assert.deepEqual(r.messages[0].rows.map((x) => x[0]), ['Patient', 'Mobile', 'Doctor', 'Department', 'Date', 'Time', 'Reason', 'Patient type']);
+  assert.equal(r.buttons[0].label, '✅ Yes, correct – confirm');
+  assert.equal(await H.dbm.db().get('SELECT COUNT(*) AS n FROM appointments').then((x) => Number(x.n)), 0, 'nothing saved before Yes');
   r = await say(r, { action: 'yes' });
   const card = r.messages.find((m) => m.type === 'card');
   assert.match(card.title, /Appointment Confirmed/);
@@ -285,7 +288,7 @@ test('chat: Tamil booking end-to-end, confirmed by typing "ஆம்"', async ()
   r = await say(r, { message: '98765 66666' });
   r = await say(r, { message: 'புதிய நோயாளி' });
   r = await say(r, { message: 'நெஞ்சு வலி பரிசோதனை' });
-  assert.equal(r.messages[0].title, 'இந்த சந்திப்பை உறுதி செய்யலாமா?');
+  assert.equal(r.messages[0].title, 'உங்கள் விவரங்களைச் சரிபார்க்கவும். இவை சரியா?');
   r = await say(r, { message: 'ஆம்' });
   assert.match(r.messages[0].title, /சந்திப்பு உறுதி செய்யப்பட்டது/);
   const row = await H.dbm.db().get('SELECT language, patient_type FROM appointments');

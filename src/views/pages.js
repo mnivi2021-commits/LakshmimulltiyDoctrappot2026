@@ -56,9 +56,9 @@ function layout({ title, path, body, scripts = [], description }) {
   </div>
 </footer>
 <nav class="actionbar" aria-label="Quick actions">
+  <a href="/call" class="ab ab-call" aria-label="AI call – talk to our AI receptionist">${ICON.phone}<span data-i18n="btn_ai_short">AI Call</span></a>
+  <button type="button" class="ab ab-chat" data-open-chat aria-haspopup="dialog">${ICON.chat}<span data-i18n="btn_chat_short">Chat</span></button>
   <a href="/book" class="ab ab-book">${ICON.cal}<span data-i18n="btn_book_short">Book</span></a>
-  <a href="/call" class="ab ab-call" aria-label="Talk to AI receptionist">${ICON.phone}<span data-i18n="btn_ai_short">AI Call</span></a>
-  <a href="/whatsapp" class="ab ab-wa" rel="noopener">${ICON.wa}<span>WhatsApp</span></a>
 </nav>
 <button class="chat-fab" type="button" id="chatFab" aria-haspopup="dialog" aria-controls="chatPanel" aria-label="AI Receptionist chat">${ICON.chat}<span class="fab-long" data-i18n="chat_fab">🤖 AI Receptionist</span><span class="fab-short" aria-hidden="true">🤖</span></button>
 <script src="/js/i18n.js?v=${V}"></script>
@@ -71,9 +71,9 @@ ${scripts.map((s) => `<script src="/js/${s}?v=${V}"></script>`).join('\n')}
 
 const mainButtons = () => `
 <div class="cta">
+  <a class="btn btn-ai btn-xl" href="/call" aria-label="AI call – talk to our AI receptionist">${ICON.phone}<span data-i18n="btn_ai_call">AI CALL</span></a>
+  <button type="button" class="btn btn-chat btn-xl" data-open-chat aria-haspopup="dialog">${ICON.chat}<span data-i18n="btn_chat">CHAT BOX</span></button>
   <a class="btn btn-primary btn-xl" href="/book">${ICON.cal}<span data-i18n="btn_book">BOOK APPOINTMENT</span></a>
-  <a class="btn btn-ai btn-xl" href="/call" aria-label="Talk to AI receptionist">${ICON.phone}<span data-i18n="btn_ai">TALK TO AI RECEPTIONIST</span></a>
-  <a class="btn btn-wa btn-xl" href="/whatsapp" rel="noopener">${ICON.wa}<span>WHATSAPP</span></a>
 </div>`;
 
 function doctorCard(d) {
@@ -242,7 +242,6 @@ function contactPage(req, res) {
     body: `
 <section class="wrap section narrow">
   <h1 data-i18n="nav_contact">Contact</h1>
-  ${req.query.whatsapp === 'unavailable' ? '<p class="alert" data-i18n="wa_unavailable">WhatsApp chat is not available right now. Please book online or use the AI receptionist.</p>' : ''}
   <div class="card">
     <h2 data-i18n="hospital_name">Lakshmi Multispecialty Hospital</h2>
     <p>📍 ${esc(h.address)}</p>
