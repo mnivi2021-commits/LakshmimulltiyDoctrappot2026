@@ -6,6 +6,7 @@
  *
  *   POST {"object":"whatsapp_business_account", …}  → WhatsApp chatbot (WhatsApp.gs)
  *   POST {"type":"request", …}                      → row in "Requests"
+ *   POST {"type":"chat_update", "session_id", …}    → creates/updates that chat's row in "Requests"
  *   POST anything else (OmniDimension post-call)    → row in "Call Log"
  *   GET  ?hub.mode=subscribe&hub.verify_token=…      → Meta webhook verification
  *   GET  (anything else)                            → {"ok":true}
@@ -22,7 +23,9 @@ var MAX_CELL = 45000; // Google Sheets allows 50,000 characters per cell
 
 var REQUEST_SHEET = 'Requests';
 var REQUEST_HEADERS = ['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time',
-  'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email', 'Request No'];
+  'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email', 'Request No',
+  'Last Updated', 'Session ID', 'Age', 'Chat Transcript'];
+var CHAT_SOURCE = 'Website chat';
 
 var CALL_SHEET = 'Call Log';
 var CALL_HEADERS = ['Timestamp', 'Caller number', 'Call ID', 'Duration', 'Summary', 'Outcome', 'Transcript', 'Raw JSON'];
@@ -79,7 +82,21 @@ function doPost(e) {
   var mailFor = null;
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (String(pick_(body, ['type']) || '').toLowerCase() === 'request') {
+    var type = String(pick_(body, ['type']) || '').toLowerCase();
+    if (type === 'chat_update') {
+      // One row per website chat session: created by the first message, updated by the rest.
+      if (!sessionId_(body.session_id)) {
+        result = { success: false, message: 'Missing session' };
+      } else {
+        upsertChat_(ss, body, false);
+        result = { success: true };
+      }
+    } else if (type === 'request' && sessionId_(body.session_id)) {
+      // Website chat "Confirm": same row as the chat; a retry keeps the same number.
+      var chat = upsertChat_(ss, body, true);
+      if (chat.newNumber && shouldEmail_(body)) mailFor = Object.assign({}, body, { request_no: chat.request_no });
+      result = { success: true, say: THANK_YOU, request_no: chat.request_no };
+    } else if (type === 'request') {
       var requestNo = appendRequest_(ss, body);
       if (shouldEmail_(body)) mailFor = Object.assign({}, body, { request_no: requestNo });
       result = { success: true, say: THANK_YOU, request_no: requestNo };
@@ -119,24 +136,131 @@ function nextRequestNo_() {
 function appendRequest_(ss, b) {
   var sheet = ensureSheet_(ss, REQUEST_SHEET, REQUEST_HEADERS);
   var requestNo = nextRequestNo_();
-  sheet.appendRow([
-    now_(),
-    text_(pick_(b, ['patient_name', 'name', 'caller_name'])),
-    text_(mobile_(pick_(b, ['mobile', 'phone', 'mobile_number', 'phone_number']))),
-    text_(pick_(b, ['doctor', 'doctor_wanted', 'department', 'specialist'])),
-    text_(pick_(b, ['preferred_date', 'appointment_date', 'date'])),
-    text_(pick_(b, ['preferred_time', 'appointment_time', 'time', 'session'])),
-    text_(pick_(b, ['reason', 'reason_for_visit'])),
-    text_(patientType_(pick_(b, ['patient_type', 'new_or_existing']))),
-    text_(pick_(b, ['language', 'call_language'])),
-    text_(pick_(b, ['from_number', 'caller_number', 'caller_mobile', 'customer_number'])),
-    text_(pick_(b, ['call_sid', 'call_id', 'callId', 'message_id'])),
-    text_(pick_(b, ['source']) || 'AI call – system offline'),
-    text_(pick_(b, ['status']) || 'New'),
-    text_(validEmail_(pick_(b, ['email', 'patient_email']))),
-    requestNo,
-  ]);
+  // Written by header name, so it still lands correctly if staff move columns.
+  var cols = headerIndex_(sheet);
+  var row = blankRow_(cols.width);
+  var put = function (name, v) { if (cols.map.hasOwnProperty(name)) row[cols.map[name]] = text_(v); };
+  put('Timestamp', now_());
+  put('Patient name', pick_(b, ['patient_name', 'name', 'caller_name']));
+  put('Mobile', mobile_(pick_(b, ['mobile', 'phone', 'mobile_number', 'phone_number'])));
+  put('Doctor wanted', pick_(b, ['doctor', 'doctor_wanted', 'department', 'specialist']));
+  put('Preferred date', pick_(b, ['preferred_date', 'appointment_date', 'date']));
+  put('Preferred time', pick_(b, ['preferred_time', 'appointment_time', 'time', 'session']));
+  put('Reason', pick_(b, ['reason', 'reason_for_visit']));
+  put('New/Existing', patientType_(pick_(b, ['patient_type', 'new_or_existing'])));
+  put('Language', pick_(b, ['language', 'call_language']));
+  put('Caller number', pick_(b, ['from_number', 'caller_number', 'caller_mobile', 'customer_number']));
+  put('Call/Message ID', pick_(b, ['call_sid', 'call_id', 'callId', 'message_id']));
+  put('Source', pick_(b, ['source']) || 'AI call – system offline');
+  put('Status', pick_(b, ['status']) || 'New');
+  put('Email', validEmail_(pick_(b, ['email', 'patient_email'])));
+  put('Request No', requestNo);
+  put('Age', validAge_(pick_(b, ['age', 'patient_age'])));
+  sheet.appendRow(row);
   return requestNo;
+}
+
+// ---------------------------------------------------------------- website chat (one row per session)
+
+/** Session IDs come from the browser: letters, digits, "-" and "_" only. Returns '' if invalid. */
+function sessionId_(v) {
+  var s = String(v || '');
+  return /^[A-Za-z0-9_-]{8,64}$/.test(s) ? s : '';
+}
+
+/** 10-digit Indian mobile (starting 6–9) or ''. The raw text always stays in the transcript. */
+function validMobile_(v) {
+  var d = mobile_(v);
+  return /^[6-9]\d{9}$/.test(d) ? d : '';
+}
+
+function validAge_(v) {
+  var s = String(v == null ? '' : v).trim();
+  if (!/^\d{1,3}$/.test(s)) return '';
+  var n = parseInt(s, 10);
+  return (n >= 1 && n <= 120) ? String(n) : '';
+}
+
+/** Row number (2…) whose "Session ID" cell equals sid, or 0. Newest rows are checked first. */
+function findSessionRow_(sheet, cols, sid) {
+  if (!cols.map.hasOwnProperty('Session ID')) return 0;
+  var last = sheet.getLastRow();
+  if (last < 2) return 0;
+  var ids = sheet.getRange(2, cols.map['Session ID'] + 1, last - 1, 1).getValues();
+  for (var i = ids.length - 1; i >= 0; i--) if (String(ids[i][0]) === sid) return i + 2;
+  return 0;
+}
+
+/**
+ * Creates or updates the "Requests" row of one website chat session.
+ * - Only cells that change are written, so staff edits elsewhere in the row
+ *   (Status, notes, extra columns) are never overwritten.
+ * - A blank value never replaces a filled cell.
+ * - The transcript only ever grows; an older update arriving late is ignored.
+ * - confirm=true (the patient pressed Confirm) gives the row a request number
+ *   once; a retry gets the same number back.
+ * Caller must hold the script lock.
+ */
+function upsertChat_(ss, b, confirm) {
+  var sheet = ensureSheet_(ss, REQUEST_SHEET, REQUEST_HEADERS);
+  var cols = headerIndex_(sheet);
+  var sid = sessionId_(b.session_id);
+  var r = findSessionRow_(sheet, cols, sid);
+  var row = r ? sheet.getRange(r, 1, 1, cols.width).getValues()[0] : blankRow_(cols.width);
+  var changed = {};
+  var get = function (name) {
+    if (!cols.map.hasOwnProperty(name)) return '';
+    var v = row[cols.map[name]];
+    return String(v == null ? '' : v);
+  };
+  var set = function (name, v) {
+    if (!cols.map.hasOwnProperty(name) || v === undefined || v === null || v === '') return;
+    var val = text_(v);
+    if (get(name) === val) return;
+    row[cols.map[name]] = val;
+    changed[cols.map[name]] = true;
+  };
+
+  var transcript = text_(b.transcript || '');
+  var oldTranscript = get('Chat Transcript');
+  if (r && !confirm && transcript.length < oldTranscript.length) return { request_no: get('Request No'), newNumber: false };
+
+  var stamp = now_();
+  if (!r) {
+    set('Timestamp', stamp);
+    set('Session ID', sid);
+  }
+  set('Source', CHAT_SOURCE);
+  if (!get('Status')) set('Status', 'New'); // staff may have changed it – keep theirs
+  set('Patient name', String(pick_(b, ['patient_name', 'name']) || '').slice(0, 80));
+  set('Mobile', validMobile_(pick_(b, ['mobile', 'phone'])));
+  set('Age', validAge_(pick_(b, ['age', 'patient_age'])));
+  set('Doctor wanted', String(pick_(b, ['doctor', 'department']) || '').slice(0, 120));
+  set('Preferred date', String(pick_(b, ['preferred_date', 'date']) || '').slice(0, 40));
+  set('Preferred time', String(pick_(b, ['preferred_time', 'time']) || '').slice(0, 40));
+  set('Reason', String(pick_(b, ['reason', 'symptoms']) || '').slice(0, 300));
+  set('New/Existing', patientType_(pick_(b, ['patient_type'])));
+  set('Language', String(pick_(b, ['language']) || '').slice(0, 40));
+  set('Email', validEmail_(pick_(b, ['email', 'patient_email'])));
+  if (transcript.length >= oldTranscript.length) set('Chat Transcript', transcript);
+
+  var no = get('Request No');
+  var newNumber = false;
+  if (confirm && !/^LMH\d{4,}$/.test(no)) {
+    no = nextRequestNo_();
+    set('Request No', no);
+    newNumber = true;
+  }
+  set('Last Updated', stamp);
+
+  if (!r) {
+    sheet.appendRow(row);
+  } else {
+    for (var c in changed) {
+      if (changed.hasOwnProperty(c)) sheet.getRange(r, Number(c) + 1, 1, 1).setValues([[row[c]]]);
+    }
+  }
+  return { request_no: no, newNumber: newNumber };
 }
 
 // ---------------------------------------------------------------- confirmation email (Website chat)
@@ -361,12 +485,33 @@ function ensureSheet_(ss, name, headers) {
   if (sheet.getLastRow() === 0) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
     sheet.setFrozenRows(1);
-  } else if (sheet.getLastColumn() < headers.length) {
-    // New columns are only ever appended at the end, so existing data never shifts.
+  } else {
+    // Any header not already in row 1 (matched by name) is appended at the
+    // end, so existing rows and columns never shift.
     var have = sheet.getLastColumn();
-    sheet.getRange(1, have + 1, 1, headers.length - have).setValues([headers.slice(have)]).setFontWeight('bold');
+    var current = have ? sheet.getRange(1, 1, 1, have).getValues()[0].map(function (h) { return String(h).trim(); }) : [];
+    var missing = headers.filter(function (h) { return current.indexOf(h) === -1; });
+    if (missing.length) sheet.getRange(1, have + 1, 1, missing.length).setValues([missing]).setFontWeight('bold');
   }
   return sheet;
+}
+
+/** { map: {header name → 0-based column}, width } read from row 1. */
+function headerIndex_(sheet) {
+  var width = sheet.getLastColumn();
+  var names = width ? sheet.getRange(1, 1, 1, width).getValues()[0] : [];
+  var map = {};
+  for (var i = 0; i < names.length; i++) {
+    var k = String(names[i]).trim();
+    if (k && !map.hasOwnProperty(k)) map[k] = i;
+  }
+  return { map: map, width: width };
+}
+
+function blankRow_(n) {
+  var row = [];
+  for (var i = 0; i < n; i++) row.push('');
+  return row;
 }
 
 /** Creates all four sheets at once (optional: run once from the editor). */

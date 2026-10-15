@@ -25,7 +25,13 @@ function makeEnv({ today = '2026-10-09', props = {}, api = 'ok' } = {}) {
       appendRow: (r) => { sh.rows.push(Array.from(r, String)); },
       getDataRange: () => ({ getValues: () => sh.rows.map((r) => r.slice()) }),
       getRange: (r, c, nr, nc) => ({
-        setValues: (vals) => { sh.rows[r - 1] = Array.from(vals[0], String).slice(0, nc); return { setFontWeight() {} }; },
+        getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => (sh.rows[r - 1 + i] || [])[c - 1 + j] ?? '')),
+        setValues: (vals) => {
+          const row = sh.rows[r - 1] || [];
+          Array.from(vals[0], String).slice(0, nc).forEach((v, i) => { row[c - 1 + i] = v; });
+          sh.rows[r - 1] = row;
+          return { setFontWeight() {} };
+        },
       }),
       setFrozenRows: (n) => { sh.frozen = n; },
     };

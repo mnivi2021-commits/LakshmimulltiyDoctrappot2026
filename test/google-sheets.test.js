@@ -21,6 +21,7 @@ function makeEnv({ secret = 'sheet-secret', lockFails = false, props = {}, files
       getLastColumn: () => (sheet.rows[0] || []).length,
       appendRow: (r) => { sheet.rows.push(Array.from(r, String)); }, // copy out of the vm realm
       getRange: (r, c, nr, nc) => ({
+        getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => (sheet.rows[r - 1 + i] || [])[c - 1 + j] ?? '')),
         setValues: (vals) => {
           const row = sheet.rows[r - 1] || [];
           Array.from(vals[0], String).slice(0, nc).forEach((v, i) => { row[c - 1 + i] = v; });
@@ -83,11 +84,12 @@ test('request → "Requests" sheet with headers, frozen bold header, IST timesta
   assert.deepEqual(r.json, { success: true, say: 'Thank you. I have noted your details. Our hospital staff will call you back to confirm your appointment.', request_no: 'LMH1001' });
   const s = env.sheets.get('Requests');
   assert.deepEqual(s.rows[0], ['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time',
-    'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email', 'Request No']);
+    'Reason', 'New/Existing', 'Language', 'Caller number', 'Call/Message ID', 'Source', 'Status', 'Email', 'Request No',
+    'Last Updated', 'Session ID', 'Age', 'Chat Transcript']);
   assert.equal(s.frozen, 1);
   assert.equal(s.boldHeader, true);
   assert.deepEqual(s.rows[1], ['Asia/Kolkata|yyyy-MM-dd HH:mm:ss', 'Ravi Kumar', '9876543210', 'Mr. Vijul – Orthopaedic', '2026-10-12',
-    '10:30 AM', 'Knee pain', 'New', 'Tamil', "'+919876543210", 'CA123', 'AI call – system offline', 'New', '', 'LMH1001']);
+    '10:30 AM', 'Knee pain', 'New', 'Tamil', "'+919876543210", 'CA123', 'AI call – system offline', 'New', '', 'LMH1001', '', '', '', '']);
   assert.equal(env.sheets.has('Call Log'), false);
   assert.equal(env.locks.released, 1);
 });
@@ -217,7 +219,7 @@ test('Website chat request with email: saved in the last "Email" column and a co
   const env = makeEnv();
   assert.equal(env.post(WEB).json.success, true);
   const row = env.sheets.get('Requests').rows[1];
-  assert.equal(row.length, 15);
+  assert.equal(row.length, 19);
   assert.equal(row[13], 'anitha@example.com');
   assert.equal(row[14], 'LMH1001');
   assert.equal(row[11], 'Website chat');
@@ -261,7 +263,7 @@ test('email failure is logged to "WA Errors" and the request is still saved', ()
   assert.match(err[2], /too many times/);
 });
 
-test('existing 13-column "Requests" sheet gets the "Email" header appended (no columns shift)', () => {
+test('existing 13-column "Requests" sheet gets the missing headers appended by name (no columns shift)', () => {
   const env = makeEnv();
   const old = env.ctx.SpreadsheetApp.getActiveSpreadsheet().insertSheet('Requests');
   old.rows.push(['Timestamp', 'Patient name', 'Mobile', 'Doctor wanted', 'Preferred date', 'Preferred time', 'Reason', 'New/Existing',
@@ -270,7 +272,8 @@ test('existing 13-column "Requests" sheet gets the "Email" header appended (no c
   env.post(WEB);
   assert.equal(old.rows[0][12], 'Status');
   assert.equal(old.rows[0][13], 'Email');
-  assert.equal(old.rows[1][1], 'Old Row', 'old data untouched');
+  assert.deepEqual(old.rows[0].slice(14), ['Request No', 'Last Updated', 'Session ID', 'Age', 'Chat Transcript']);
+  assert.deepEqual(old.rows[1], ['2026-10-01 10:00:00', 'Old Row', '9000000000', 'Mr. Vijul', '', '', '', 'New', '', '', '', 'AI call – system offline', 'New'], 'old data untouched');
   assert.equal(old.rows[2][13], 'anitha@example.com');
 });
 
@@ -291,4 +294,120 @@ test('request counter continues from the stored value (and repairs bad values)',
   assert.equal(makeEnv({ props: { REQUEST_COUNTER: '1056' } }).post(WEB).json.request_no, 'LMH1057');
   assert.equal(makeEnv({ props: { REQUEST_COUNTER: 'oops' } }).post(WEB).json.request_no, 'LMH1001');
   assert.equal(makeEnv({ props: { REQUEST_COUNTER: '12' } }).post(WEB).json.request_no, 'LMH1001');
+});
+
+// ---------------- Website chat: one row per session ----------------
+const SID = 'b3f1c2d4-1111-4222-8333-944455556666';
+const UPD = { secret: 'sheet-secret', type: 'chat_update', source: 'Website chat', session_id: SID };
+const col = (env, name) => env.sheets.get('Requests').rows[0].indexOf(name);
+const cell = (env, row, name) => env.sheets.get('Requests').rows[row][col(env, name)];
+
+test('chat: first message creates one row, later messages update the same row (fields filled as given)', () => {
+  const env = makeEnv();
+  assert.deepEqual(env.post({ ...UPD, language: 'English', transcript: '[15 Oct, 10:00:00] Bot: Welcome\n[15 Oct, 10:00:05] Patient: English' }).json, { success: true });
+  const s = env.sheets.get('Requests');
+  assert.equal(s.rows.length, 2);
+  assert.equal(cell(env, 1, 'Session ID'), SID);
+  assert.equal(cell(env, 1, 'Source'), 'Website chat');
+  assert.equal(cell(env, 1, 'Status'), 'New');
+  assert.equal(cell(env, 1, 'Timestamp'), 'Asia/Kolkata|yyyy-MM-dd HH:mm:ss');
+  assert.equal(cell(env, 1, 'Last Updated'), 'Asia/Kolkata|yyyy-MM-dd HH:mm:ss');
+  assert.equal(cell(env, 1, 'Language'), 'English');
+  assert.equal(cell(env, 1, 'Request No'), '', 'no number until Confirm');
+
+  env.post({ ...UPD, patient_name: 'Ravi', transcript: 'a'.repeat(200) });
+  env.post({ ...UPD, mobile: '98765 43210', age: '42', doctor: 'Mr. Vijul – Orthopaedic', preferred_date: '2026-10-20', preferred_time: 'Morning', reason: 'Knee pain', transcript: 'a'.repeat(300) });
+  assert.equal(s.rows.length, 2, 'still one row');
+  assert.equal(cell(env, 1, 'Patient name'), 'Ravi');
+  assert.equal(cell(env, 1, 'Mobile'), '9876543210');
+  assert.equal(cell(env, 1, 'Age'), '42');
+  assert.equal(cell(env, 1, 'Doctor wanted'), 'Mr. Vijul – Orthopaedic');
+  assert.equal(cell(env, 1, 'Preferred date'), '2026-10-20');
+  assert.equal(cell(env, 1, 'Preferred time'), 'Morning');
+  assert.equal(cell(env, 1, 'Reason'), 'Knee pain');
+  assert.equal(cell(env, 1, 'Chat Transcript').length, 300);
+  assert.equal(env.store.REQUEST_COUNTER, undefined, 'updates never use a request number');
+});
+
+test('chat: blanks never overwrite filled cells; staff Status is kept; an older (shorter) transcript is ignored', () => {
+  const env = makeEnv();
+  env.post({ ...UPD, patient_name: 'Ravi', mobile: '9876543210', transcript: 'x'.repeat(100) });
+  env.sheets.get('Requests').rows[1][col(env, 'Status')] = 'Called back';
+  env.post({ ...UPD, patient_name: '', mobile: '', transcript: 'x'.repeat(150) });
+  assert.equal(cell(env, 1, 'Patient name'), 'Ravi');
+  assert.equal(cell(env, 1, 'Mobile'), '9876543210');
+  assert.equal(cell(env, 1, 'Status'), 'Called back');
+  env.post({ ...UPD, patient_name: 'Late Old Update', transcript: 'x'.repeat(120) });
+  assert.equal(cell(env, 1, 'Patient name'), 'Ravi', 'stale update ignored');
+  assert.equal(cell(env, 1, 'Chat Transcript').length, 150);
+});
+
+test('chat: only a valid 10-digit Indian mobile goes into the Mobile column', () => {
+  for (const bad of ['12345', '5123456789', '98765432101', 'call me']) {
+    const env = makeEnv();
+    env.post({ ...UPD, mobile: bad, transcript: 'Patient: ' + bad });
+    assert.equal(cell(env, 1, 'Mobile'), '', bad);
+    assert.ok(cell(env, 1, 'Chat Transcript').includes(bad), 'raw text kept in transcript');
+  }
+  const env = makeEnv();
+  env.post({ ...UPD, mobile: '+91 91234 56789' });
+  assert.equal(cell(env, 1, 'Mobile'), '9123456789');
+});
+
+test('chat: Confirm gives the same row a request number once (retry → same number), email sent once', () => {
+  const env = makeEnv();
+  env.post({ ...UPD, patient_name: 'Anitha', transcript: 't'.repeat(50) });
+  const confirm = { ...WEB, session_id: SID, transcript: 't'.repeat(80) };
+  const a = env.post(confirm).json;
+  assert.equal(a.success, true);
+  assert.equal(a.request_no, 'LMH1001');
+  const b = env.post(confirm).json; // e.g. the browser timed out and retried
+  assert.equal(b.request_no, 'LMH1001');
+  const s = env.sheets.get('Requests');
+  assert.equal(s.rows.length, 2, 'one row for the whole chat');
+  assert.equal(cell(env, 1, 'Request No'), 'LMH1001');
+  assert.equal(cell(env, 1, 'Email'), 'anitha@example.com');
+  assert.equal(cell(env, 1, 'Patient name'), 'Anitha <b>R</b>');
+  assert.equal(env.mails.length, 1);
+  // final transcript after the confirmation message
+  env.post({ ...UPD, transcript: 't'.repeat(120) });
+  assert.equal(cell(env, 1, 'Chat Transcript').length, 120);
+  assert.equal(cell(env, 1, 'Request No'), 'LMH1001');
+  // a different session is a new row with the next number
+  assert.equal(env.post({ ...confirm, session_id: 'another-session-0001' }).json.request_no, 'LMH1002');
+  assert.equal(s.rows.length, 3);
+});
+
+test('chat: updates write only changed cells (staff columns and edits elsewhere are untouched)', () => {
+  const env = makeEnv();
+  env.post({ ...UPD, patient_name: 'Ravi', transcript: 'abc' });
+  const s = env.sheets.get('Requests');
+  s.rows[0].push('Staff notes');
+  s.rows[1][19] = 'call after 5pm';
+  s.rows[1][col(env, 'Caller number')] = '=HYPERLINK("x")';
+  env.post({ ...UPD, doctor: 'Ms. Nivi – Heart Specialist', transcript: 'abcdef' });
+  assert.equal(s.rows[1][19], 'call after 5pm');
+  assert.equal(cell(env, 1, 'Caller number'), '=HYPERLINK("x")', 'not rewritten');
+  assert.equal(cell(env, 1, 'Doctor wanted'), 'Ms. Nivi – Heart Specialist');
+});
+
+test('chat: secret required, session ID validated, formulas blocked, transcript truncated', () => {
+  const env = makeEnv();
+  assert.deepEqual(env.post({ ...UPD, secret: 'wrong' }).json, { success: false });
+  assert.deepEqual(env.post({ ...UPD, secret: undefined }).json, { success: false });
+  assert.equal(env.sheets.size, 0);
+  for (const bad of ['', 'short', 'has space in it', '../../etc/passwd', 'x'.repeat(65)]) {
+    assert.equal(env.post({ ...UPD, session_id: bad }).json.success, false, JSON.stringify(bad));
+  }
+  env.post({ ...UPD, patient_name: '=IMPORTXML("http://evil")', transcript: '=1+1' + 'y'.repeat(60000) });
+  assert.equal(cell(env, 1, 'Patient name'), '\'=IMPORTXML("http://evil")');
+  assert.ok(cell(env, 1, 'Chat Transcript').startsWith("'=1+1"));
+  assert.ok(cell(env, 1, 'Chat Transcript').length < 50000);
+});
+
+test('chat: Confirm without a session ID still appends a row (older page / Worker)', () => {
+  const env = makeEnv();
+  env.post(WEB);
+  env.post(WEB);
+  assert.equal(env.sheets.get('Requests').rows.length, 3);
 });

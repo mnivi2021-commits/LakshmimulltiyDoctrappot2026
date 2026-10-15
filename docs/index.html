@@ -440,12 +440,95 @@
     var S = null; // { lang, step, data } – memory only
     var t = function (k) { return T[(S && S.lang) || 'en'][k]; };
 
+    // ---------- Sheet sync: one "Requests" row per chat session ----------
+    // The session ID and transcript are kept in sessionStorage (this tab only,
+    // cleared when the tab closes), so a reload keeps updating the same row.
+    var STORE_KEY = 'lmh_chat_session';
+    function newChat() {
+      var id = '';
+      try { id = crypto.randomUUID(); } catch (e) { id = ''; }
+      if (!id) id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+      return { id: id, log: [], done: false };
+    }
+    function loadChat() {
+      try {
+        var c = JSON.parse(sessionStorage.getItem(STORE_KEY) || 'null');
+        if (c && /^[A-Za-z0-9_-]{8,64}$/.test(c.id) && Array.isArray(c.log) && !c.done) return c;
+      } catch (e) { /* storage blocked: keep it in memory only */ }
+      return newChat();
+    }
+    function saveChat() { try { sessionStorage.setItem(STORE_KEY, JSON.stringify(chat)); } catch (e) { /* ignore */ } }
+    var chat = loadChat();
+    function clock() {
+      try {
+        return new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      } catch (e) { return new Date().toISOString(); }
+    }
+    function record(who, text) {
+      chat.log.push({ at: clock(), who: who, text: String(text) });
+      saveChat();
+    }
+    function transcriptText() {
+      return chat.log.map(function (e) { return '[' + e.at + '] ' + e.who + ': ' + e.text; }).join('\n');
+    }
+    function hasPatient() { return chat.log.some(function (e) { return e.who === 'Patient'; }); }
+    function chatUpdate() {
+      var d = (S && S.data) || {};
+      return JSON.stringify({
+        action: 'update', session_id: chat.id, transcript: transcriptText(),
+        patient_name: d.patient_name || '', mobile: d.mobile || '', doctor: d.doctor || '',
+        preferred_date: d.preferred_date || '', preferred_time: d.preferred_time || '', reason: d.reason || '',
+        patient_type: d.patient_type || '', email: d.email || '',
+        language: S && S.lang ? (S.lang === 'ta' ? 'Tamil' : 'English') : '', website: honeypot.value || '',
+      });
+    }
+    // text/plain keeps this a "simple" cross-site request (no CORS preflight);
+    // the Worker parses the body with JSON.parse(await req.text()).
+    function send(body, signal) {
+      return fetch(WEBCHAT_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: body, signal: signal, keepalive: body.length < 60000,
+      });
+    }
+    var syncTimer = null, syncing = false, syncAgain = false, sentCount = 0;
+    function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 800); }
+    function syncNow() { // one update at a time, always with the latest details
+      syncTimer = null;
+      if (!hasPatient()) return; // nothing typed yet → no row
+      if (syncing) { syncAgain = true; return; }
+      syncing = true;
+      var count = chat.log.length;
+      send(chatUpdate())
+        .then(function (r) { if (r.ok) sentCount = Math.max(sentCount, count); }, function () {})
+        .then(function () { syncing = false; if (syncAgain) { syncAgain = false; syncNow(); } });
+    }
+    // Chat finished or closed, or page hidden: send the complete transcript now,
+    // even if the page is going away.
+    function finalSync() {
+      clearTimeout(syncTimer); syncTimer = null;
+      if (!hasPatient() || chat.log.length <= sentCount) return;
+      var body = chatUpdate();
+      var queued = false;
+      try { queued = !!(navigator.sendBeacon && navigator.sendBeacon(WEBCHAT_URL, new Blob([body], { type: 'text/plain;charset=UTF-8' }))); } catch (e) { queued = false; }
+      if (queued) sentCount = chat.log.length;
+      else send(body).catch(function () {});
+    }
+    window.addEventListener('pagehide', finalSync);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') finalSync(); });
+    // Invalid answers are not accepted, but the raw text stays in the transcript.
+    function reject(raw, msg) {
+      if (raw) { record('Patient', raw); record('Bot', msg); scheduleSync(); }
+      setError(msg);
+    }
+
     function bubble(text, who, cls) {
       var b = document.createElement('div');
       b.className = 'bubble ' + who + (cls ? ' ' + cls : '');
       b.textContent = text; // never innerHTML with user data
       log.appendChild(b);
       log.scrollTop = log.scrollHeight;
+      record(who === 'user' ? 'Patient' : 'Bot', text);
+      if (who === 'user') scheduleSync();
       return b;
     }
     function scrollLog() {
@@ -499,6 +582,7 @@
 
     // ---------- flow ----------
     function start(preDoctor) {
+      if (chat.done) { chat = newChat(); sentCount = 0; saveChat(); } // previous chat confirmed → new row
       S = { lang: null, step: 'lang', data: {}, preDoctor: preDoctor || null };
       log.textContent = '';
       clearUI();
@@ -577,20 +661,17 @@
       S.step = 'sending';
       quick.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
       btn.textContent = t('sending');
+      record('Patient', t('confirm'));
       var d = S.data;
       var payload = {
+        session_id: chat.id, transcript: transcriptText(),
         patient_name: d.patient_name, mobile: d.mobile, doctor: d.doctor, preferred_date: d.preferred_date,
         preferred_time: d.preferred_time, reason: d.reason || '', patient_type: d.patient_type,
         language: S.lang === 'ta' ? 'Tamil' : 'English', email: d.email || '', website: honeypot.value || '',
       };
       var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
       var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
-      // text/plain keeps this a "simple" cross-site request (no CORS preflight);
-      // the Worker parses the body with JSON.parse(await req.text()).
-      fetch(WEBCHAT_URL, {
-        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-        body: JSON.stringify(payload), signal: ctrl ? ctrl.signal : undefined,
-      })
+      send(JSON.stringify(payload), ctrl ? ctrl.signal : undefined)
         .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return (r.ok && j && j.ok === true) ? j : null; }); })
         .catch(function () { return null; })
         .then(function (j) {
@@ -605,6 +686,8 @@
         (no ? '\n\nYour appointment request number: ' + no + '. Please keep it.\nஉங்கள் சந்திப்பு கோரிக்கை எண்: ' + no + '. இதை வைத்துக்கொள்ளவும்.' : '') +
         (S.data.email ? '\n\n' + T.en.emailed + '\n' + T.ta.emailed : ''), 'bot', 'ok');
       quickButtons([{ label: t('again'), onClick: start }]);
+      finalSync();
+      chat.done = true; saveChat();
     }
     function failed() {
       S.step = 'summary'; clearUI();
@@ -639,24 +722,24 @@
       var v = input.value.trim().replace(/\s+/g, ' ');
       setError('');
       if (S.step === 'name') {
-        if (v.length < 2 || v.length > 80) return setError(t('badName'));
+        if (v.length < 2 || v.length > 80) return reject(v, t('badName'));
         bubble(v, 'user'); S.data.patient_name = v; return goMobile();
       }
       if (S.step === 'mobile') {
         var digits = v.replace(/\D/g, '');
         if (digits.length === 12 && digits.indexOf('91') === 0) digits = digits.slice(2);
         if (digits.length === 11 && digits.charAt(0) === '0') digits = digits.slice(1);
-        if (!/^[6-9]\d{9}$/.test(digits)) return setError(t('badMobile'));
+        if (!/^[6-9]\d{9}$/.test(digits)) return reject(v, t('badMobile'));
         bubble(digits, 'user'); S.data.mobile = digits; return goDoctor();
       }
       if (S.step === 'date') {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || v < todayLocal()) return setError(t('badDate'));
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || v < todayLocal()) return reject(v, t('badDate'));
         var p = v.split('-').map(Number);
-        if (new Date(p[0], p[1] - 1, p[2]).getDay() === 0) return setError(t('sunday'));
+        if (new Date(p[0], p[1] - 1, p[2]).getDay() === 0) return reject(v, t('sunday'));
         S.data.preferred_date = v; bubble(prettyDate(v), 'user'); return goTime();
       }
       if (S.step === 'email') {
-        if (v && !validEmail(v)) return setError(t('badEmail'));
+        if (v && !validEmail(v)) return reject(v, t('badEmail'));
         S.data.email = v; bubble(v || t('skip'), 'user'); return goSummary();
       }
       if (S.step === 'reason') {
@@ -678,6 +761,7 @@
       setTimeout(function () { target.focus(); }, 30);
     }
     function closeChat() {
+      finalSync();
       panel.hidden = true;
       document.body.classList.remove('chat-open');
       openBtn.setAttribute('aria-expanded', 'false');

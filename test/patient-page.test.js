@@ -94,6 +94,18 @@ test('docs/index.html (GitHub Pages / Vercel copy): chat box present, posts to W
   assert.match(html, /j \? done\(j\.request_no\) : failed\(\)/);
   assert.match(html, /\/\^LMH\\d\{4,\}\$\/\.test/);
   assert.match(html, /Your appointment request number: ' \+ no \+ '\. Please keep it\./);
+  // one Sheet row per chat session: ID + transcript in sessionStorage (guarded), updates after each answer,
+  // final update by sendBeacon (or keepalive fetch) when the chat ends/closes or the page is hidden
+  assert.match(html, /sessionStorage\.getItem\(STORE_KEY\)/);
+  assert.match(html, /try \{ sessionStorage\.setItem\(STORE_KEY, JSON\.stringify\(chat\)\); \} catch \(e\)/);
+  assert.match(html, /action: 'update', session_id: chat\.id, transcript: transcriptText\(\)/);
+  assert.match(html, /session_id: chat\.id, transcript: transcriptText\(\),\s*patient_name: d\.patient_name/, 'Confirm carries the session');
+  assert.match(html, /navigator\.sendBeacon\(WEBCHAT_URL, new Blob\(\[body\], \{ type: 'text\/plain;charset=UTF-8' \}\)\)/);
+  assert.match(html, /keepalive: body\.length < 60000/);
+  assert.match(html, /window\.addEventListener\('pagehide', finalSync\)/);
+  assert.match(html, /function closeChat\(\) \{\s*finalSync\(\);/);
+  assert.match(html, /record\(who === 'user' \? 'Patient' : 'Bot', text\)/);
+  assert.equal((html.match(/return setError\(t\(/g) || []).length, 0, 'invalid answers go through reject() so raw text is kept');
   // A+ larger-text button removed
   assert.ok(!/textSize|class="textsize"|Larger text|lmh_big_text/.test(html), 'A+ button removed');
   assert.ok(!/window\.open/.test(html), 'nothing opens other apps');
