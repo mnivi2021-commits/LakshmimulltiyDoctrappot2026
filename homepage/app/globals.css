@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+  body { font-size: 17px; line-height: 1.55; }
+  :focus-visible { outline: 3px solid #E8A317; outline-offset: 2px; }
+  [lang='ta'] { font-family: var(--font-baloo-thambi), 'Nirmala UI', Latha, sans-serif; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+}
+
+@layer components {
+  /* Buttons: hover lifts, pressed sinks, disabled fades */
+  .btn {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-btn px-5 font-display text-lg font-semibold
+      transition duration-150 ease-out hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0 active:scale-[0.98] active:shadow-none
+      disabled:pointer-events-none disabled:opacity-60;
+  }
+  .btn-call { @apply btn bg-accent text-accent-ink hover:bg-accent-600 active:bg-accent-600; }
+  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-600 active:bg-brand; }
+  .btn-outline { @apply btn border-2 border-brand bg-white text-brand hover:bg-brand-50 active:bg-brand-50; }
+  .card { @apply rounded-card border border-line bg-white shadow-card; }
+  .section-title { @apply font-display text-[1.75rem] font-semibold leading-tight text-brand md:text-4xl; }
+  .field {
+    @apply mt-1 block min-h-[48px] w-full rounded-field border-2 border-line bg-white px-3 text-base text-ink
+      placeholder:text-muted/70 focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15;
+  }
+  .field[aria-invalid='true'] { @apply border-danger focus:ring-danger/15; }
+}
