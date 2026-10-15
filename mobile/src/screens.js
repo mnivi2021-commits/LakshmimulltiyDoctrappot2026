@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { api, CALL_URL, WHATSAPP_URL, addDays, prettyDate, time12 } from './api';
+import { api, CALL_URL, addDays, prettyDate, time12 } from './api';
 import { useT } from './i18n';
 import { C, s } from './theme';
 
@@ -37,7 +37,6 @@ function ApptCard({ a, title }) {
 }
 
 const openCall = () => Linking.openURL(CALL_URL);
-const openWhatsApp = () => Linking.openURL(WHATSAPP_URL);
 
 // ---------------- Home ----------------
 export function HomeScreen({ go }) {
@@ -48,10 +47,9 @@ export function HomeScreen({ go }) {
         <Text style={[s.h1, { color: '#fff' }]}>{t('hospital')}</Text>
         <Text style={{ color: '#e6f4f5', fontSize: 16 }}>{t('welcome')}</Text>
       </View>
-      <BigButton label={`📅  ${t('btn_book')}`} color={C.accent} textColor="#2b1d00" onPress={() => go('book')} />
       <BigButton label={`📞  ${t('btn_ai')}`} color={C.ai} onPress={openCall} />
-      <BigButton label={`💬  ${t('btn_wa')}`} color={C.wa} onPress={openWhatsApp} />
-      <BigButton label={`🤖  ${t('btn_chat')}`} color="#fff" textColor={C.ai} onPress={() => go('chat')} />
+      <BigButton label={`💬  ${t('btn_chat')}`} color="#fff" textColor={C.ai} onPress={() => go('chat')} />
+      <BigButton label={`📅  ${t('btn_book')}`} color={C.accent} textColor="#2b1d00" onPress={() => go('book')} />
       <Text style={[s.muted, { textAlign: 'center', marginTop: 8 }]}>தமிழ் · English · हिंदी</Text>
       <Text style={[s.muted, { textAlign: 'center', marginTop: 4 }]}>{t('emergency')}</Text>
     </ScrollView>

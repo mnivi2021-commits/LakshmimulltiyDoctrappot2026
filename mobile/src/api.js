@@ -25,9 +25,8 @@ export const api = {
   chat: (payload) => request('/api/chat', payload),
 };
 
-// Server-side redirects keep the private numbers out of the app.
+// Server-side redirect keeps the private number out of the app.
 export const CALL_URL = `${API_URL}/call`;
-export const WHATSAPP_URL = `${API_URL}/whatsapp`;
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

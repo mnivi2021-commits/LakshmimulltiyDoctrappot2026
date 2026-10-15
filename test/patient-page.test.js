@@ -27,6 +27,7 @@ test('patient page: served with a CSP that allows exactly its inline script/styl
   assert.ok(!csp.includes('unsafe-inline'), 'no unsafe-inline');
   assert.match(csp, /fonts\.googleapis\.com/);
   assert.match(csp, /fonts\.gstatic\.com/);
+  assert.match(csp, /connect-src 'self' https:\/\/lakshmi-sheets\.mnivi2021\.workers\.dev/);
   // other pages keep the strict policy
   const other = (await fetch(`${base}/book`)).headers.get('content-security-policy');
   assert.ok(!other.includes('sha256-') && !other.includes('googleapis'));
@@ -42,7 +43,9 @@ test('patient page: no phone number in visible text, no secrets, no voice API', 
   assert.ok(!/test-webhook-secret|test-postcall-secret|test-token|OMNIDIM_|DB_PASSWORD/.test(html), 'no secrets');
   // links are set by script from the two constants
   assert.match(html, /const CALL_NUMBER = "\+91[6-9]\d{9}";/);
-  assert.match(html, /const WHATSAPP_NUMBER = "91[6-9]\d{9}";/);
+  // WhatsApp removed; the chat box saves through the Worker, which this page's CSP allows
+  assert.ok(!/whatsapp|wa\.me|வாட்ஸ்அப்/i.test(html), 'no WhatsApp on /index.html');
+  assert.match(html, /id="chatOpen"/);
 });
 
 test('patient page: doctor list comes from the database API', async () => {

@@ -29,7 +29,7 @@ function patientPageCsp(req, res, next) {
         csp: [
           "default-src 'self'", `script-src 'self' ${inlineHashes(html, 'script')}`,
           `style-src 'self' https://fonts.googleapis.com ${inlineHashes(html, 'style')}`,
-          "font-src 'self' https://fonts.gstatic.com", "img-src 'self' data:", "connect-src 'self'",
+          "font-src 'self' https://fonts.gstatic.com", "img-src 'self' data:", "connect-src 'self' https://lakshmi-sheets.mnivi2021.workers.dev",
           "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'",
         ].join('; '),
       };
