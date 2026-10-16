@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lakshmi Hospital Appointment System – Tools &amp; Build Guide</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  :root { --brand: #0F4C45; --accent: #E8A317; --ink: #1C2B29; --muted: #4c5e5b; --line: #d6e3df; --mint: #F3F7F5; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.45; margin: 0; }
+  h1 { color: var(--brand); font-size: 22pt; margin: 0 0 4px; line-height: 1.15; }
+  h2 { color: var(--brand); font-size: 14.5pt; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--accent); page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 14px 0 4px; color: var(--brand); page-break-after: avoid; }
+  p { margin: 4px 0 8px; }
+  .cover { background: var(--brand); color: #fff; padding: 26px 26px 22px; border-radius: 14px; margin-bottom: 14px; }
+  .cover h1 { color: #fff; }
+  .cover .sub { font-size: 12pt; color: #d9efe9; }
+  .cover .meta { margin-top: 14px; font-size: 9.5pt; color: #cfe7e1; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 9.5pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th { background: var(--brand); color: #fff; text-align: left; padding: 6px 7px; font-weight: 600; }
+  td { padding: 5px 7px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--mint); }
+  .cat td { background: #fff4dc !important; font-weight: 700; color: #6a4a00; }
+  code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 9pt; background: #eef4f2; padding: 1px 4px; border-radius: 4px; }
+  pre { font-family: Consolas, "Courier New", monospace; font-size: 8.8pt; background: #10302c; color: #e8f5f1; padding: 9px 11px; border-radius: 8px; white-space: pre-wrap; margin: 4px 0 10px; page-break-inside: avoid; }
+  .flow { display: grid; gap: 6px; margin: 6px 0 10px; }
+  .flow div { border: 1px solid var(--line); border-left: 5px solid var(--brand); border-radius: 8px; padding: 7px 10px; background: #fff; page-break-inside: avoid; }
+  .flow b { color: var(--brand); }
+  .note { background: #fff8e6; border: 1px solid #f0cf7a; border-radius: 8px; padding: 8px 11px; margin: 8px 0; page-break-inside: avoid; }
+  .warn { background: #fdecea; border: 1px solid #f1b5ae; border-radius: 8px; padding: 8px 11px; margin: 8px 0; page-break-inside: avoid; }
+  ol, ul { margin: 4px 0 8px; padding-left: 20px; }
+  li { margin: 2px 0; }
+  .step { page-break-inside: avoid; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 8.5pt; font-weight: 700; }
+  .free { background: #e6f4ec; color: #1e7a46; }
+  .paid { background: #fff1d6; color: #7a5200; }
+  .break { page-break-before: always; }
+  .small { font-size: 9pt; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Lakshmi Multispecialty Hospital<br>Appointment System</h1>
+  <div class="sub">Software tools used &amp; step-by-step build guide</div>
+  <div class="meta">Virudhunagar, Tamil Nadu · Version of 16 October 2026 · Code: github.com/mnivi2021-commits/LakshmimulltiyDoctrappot2026</div>
+</div>
+
+<h2>1. What the system does</h2>
+<p>Patients can book an appointment with Dr. Vijul (Orthopaedic), Dr. Vishwa (Diabetologist, Head of Hospital) or Dr. Nivi (Heart Specialist) in four ways:</p>
+<ul>
+  <li><b>AI phone call</b> – an AI receptionist (OmniDimension) answers in Tamil, English and Hindi, checks real free slots and books.</li>
+  <li><b>Website chat box</b> – a guided chat (name → mobile → doctor → date → morning/evening → time slot → confirm) that gives a booking reference number.</li>
+  <li><b>Book Appointment page / form</b> on the full website, served from the hospital PC.</li>
+  <li><b>Mobile app</b> (Expo Go) with AI CALL, CHAT BOX and BOOK APPOINTMENT buttons.</li>
+</ul>
+<p>Staff see everything in the <b>admin dashboard</b> (PC) and in the Google Sheet <b>“Lakshmi Hospital – Calls &amp; Requests”</b>, which keeps working even when the PC is switched off.</p>
+
+<h2>2. Software tools used</h2>
+<table>
+  <thead><tr><th style="width:24%">Tool</th><th>What it is used for</th><th style="width:13%">Cost</th></tr></thead>
+  <tbody>
+    <tr class="cat"><td colspan="3">Building &amp; editing</td></tr>
+    <tr><td>Visual Studio Code</td><td>Code editor where all files were written and opened.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>Claude Code (AI assistant)</td><td>Wrote, tested and deployed the code from VS Code, following your instructions.</td><td><span class="pill paid">Subscription</span></td></tr>
+    <tr><td>Git + GitHub</td><td>Saves every version of the code online (the repository above). <code>git push</code> uploads changes.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>PowerShell / Git Bash</td><td>Windows command line used to run, test and deploy.</td><td><span class="pill free">Free</span></td></tr>
+
+    <tr class="cat"><td colspan="3">Backend (runs on the hospital PC)</td></tr>
+    <tr><td>Node.js 24 + npm</td><td>Runs the hospital server (<code>server.js</code>) and installs libraries.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>Express</td><td>Web server: website pages, booking API, voice-agent API, admin dashboard.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>XAMPP (MySQL / MariaDB)</td><td>Main database: doctors, schedules, appointments (LMH-0001 numbers), call logs. Port 3306.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>mysql2 · node:sqlite</td><td>Database drivers. SQLite is used only for the automatic tests.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>Node test runner</td><td>106 automatic tests (booking, voice, chat, Sheets, WhatsApp bot, pages). Run with <code>npm test</code>.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>cloudflared (Cloudflare Tunnel)</td><td>Gives the PC a temporary public https address so the AI phone agent can reach it.</td><td><span class="pill free">Free</span></td></tr>
+
+    <tr class="cat"><td colspan="3">Always-on cloud parts (work when the PC is off)</td></tr>
+    <tr><td>Google Sheets + Apps Script</td><td>Sheet “Lakshmi Hospital – Calls &amp; Requests”. <code>Code.gs</code> saves requests (one row per chat), gives request numbers LMH1001+, logs calls; <code>WhatsApp.gs</code> runs the WhatsApp bot. MailApp sends confirmation emails.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>Cloudflare Workers</td><td>Worker <b>lakshmi-sheets</b>: a safe relay between the website and the Sheet. It holds the secret so the browser never sees it.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>Vercel + Vercel CLI</td><td>Hosts the public websites: <b>lakshmi-hospital.vercel.app</b> (patient page with chat) and the new homepage. Deploy with <code>vercel --prod</code>.</td><td><span class="pill free">Free</span></td></tr>
+
+    <tr class="cat"><td colspan="3">AI voice &amp; messaging</td></tr>
+    <tr><td>OmniDimension</td><td>AI voice receptionist (incoming calls, Tamil/English/Hindi). Uses Custom API tools that call the PC, plus a post-call webhook.</td><td><span class="pill paid">Paid plan</span></td></tr>
+    <tr><td>Meta WhatsApp Cloud API</td><td>WhatsApp chatbot (test number) handled by Apps Script. WhatsApp buttons were removed from the patient pages.</td><td><span class="pill free">Free tier</span></td></tr>
+
+    <tr class="cat"><td colspan="3">Websites &amp; mobile app</td></tr>
+    <tr><td>HTML / CSS / JavaScript</td><td>Patient page <code>docs/index.html</code>: Call button, chat box, Meet Our Doctors with photos.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>Next.js 14 · React 18 · Tailwind CSS 3 · lucide-react</td><td>New homepage in <code>homepage/</code> (TopBar, Hero, DoctorCard, AppointmentForm, ChatWidget, StickyCallBar…).</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>Google Fonts</td><td>Hind Madurai / Noto Sans Tamil (patient page); Fredoka, Atkinson Hyperlegible, Baloo Thambi 2 (homepage).</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>Expo (SDK 57) + React Native · Expo Go app</td><td>Mobile app in <code>mobile/</code>, opened on phones with Expo Go.</td><td><span class="pill free">Free</span></td></tr>
+    <tr><td>Google Chrome (headless)</td><td>Automatic browser checks of the pages, chat flow and screenshots.</td><td><span class="pill free">Free</span></td></tr>
+  </tbody>
+</table>
+
+<h2 class="break">3. How the parts connect</h2>
+<div class="flow">
+  <div><b>Website chat (Vercel)</b> → Cloudflare Worker <span class="mono">/webchat</span> (adds the secret) → Google Apps Script → <b>“Requests” sheet</b>. One row per chat session, updated as the patient answers; Confirm gives a request / reference number.</div>
+  <div><b>AI phone call</b> → OmniDimension agent → Custom API tools → Cloudflare Tunnel → <b>Node server on the PC</b> → MySQL. Real free slots only; booking gives an appointment number like <span class="mono">LMH-0012</span>.</div>
+  <div><b>PC switched off?</b> The agent uses its <span class="mono">save_request</span> tool → Google Sheet. Staff call the patient back. Post-call reports go to the “Call Log” sheet.</div>
+  <div><b>Mobile app (Expo Go)</b> → Node server on the PC over the same Wi-Fi (<span class="mono">http://192.168.29.12:3000</span>).</div>
+  <div><b>Staff</b> → Admin dashboard on the PC (<span class="mono">/admin</span>) + the Google Sheet.</div>
+</div>
+
+<h3>Voice-agent tools (OmniDimension → PC)</h3>
+<table>
+  <thead><tr><th style="width:28%">Tool</th><th>Address on the PC</th><th style="width:34%">Purpose</th></tr></thead>
+  <tbody>
+    <tr><td>list_doctors</td><td><code>/api/voice/doctors</code></td><td>Doctors and departments</td></tr>
+    <tr><td>check_availability</td><td><code>/api/voice/check-availability</code></td><td>Real free slots</td></tr>
+    <tr><td>book_appointment</td><td><code>/api/voice/book-appointment</code></td><td>Book after the patient confirms</td></tr>
+    <tr><td>find_appointment</td><td><code>/api/voice/find-appointment</code></td><td>Look up by mobile / number</td></tr>
+    <tr><td>reschedule_appointment</td><td><code>/api/voice/reschedule-appointment</code></td><td>Move an appointment</td></tr>
+    <tr><td>cancel_appointment</td><td><code>/api/voice/cancel-appointment</code></td><td>Cancel</td></tr>
+    <tr><td>staff_callback</td><td><code>/api/voice/staff-callback</code></td><td>Ask staff to call back</td></tr>
+    <tr><td>save_request</td><td>Google Apps Script web app</td><td>Fallback when the PC is off</td></tr>
+  </tbody>
+</table>
+<p class="small">Every tool request carries the header <span class="mono">X-Webhook-Secret</span>; the PC refuses requests without it.</p>
+
+<h2>4. Step-by-step build guide</h2>
+
+<div class="step"><h3>Step 1 – Install the tools</h3>
+<ol>
+  <li>Install <b>Node.js 24</b>, <b>Git</b>, <b>VS Code</b>, <b>XAMPP</b> and <b>Google Chrome</b>.</li>
+  <li>Install command-line helpers: <code>npm i -g vercel</code> and <b>cloudflared</b>.</li>
+  <li>Create free accounts: GitHub, Vercel, Cloudflare, Google; and OmniDimension for the AI calls.</li>
+</ol></div>
+
+<div class="step"><h3>Step 2 – Get the code</h3>
+<pre>git clone https://github.com/mnivi2021-commits/LakshmimulltiyDoctrappot2026.git
+cd LakshmimulltiyDoctrappot2026
+npm install</pre></div>
+
+<div class="step"><h3>Step 3 – Settings file (.env)</h3>
+<p>Copy <code>.env.example</code> to <code>.env</code> and fill in the values. Main settings (names only – never share the values):</p>
+<table>
+  <tbody>
+    <tr><td style="width:34%"><b>Database</b></td><td><code>DB_CLIENT</code>, <code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code></td></tr>
+    <tr><td><b>Admin login</b></td><td><code>ADMIN_USERNAME</code>, <code>ADMIN_PASSWORD</code>, <code>SESSION_SECRET</code></td></tr>
+    <tr><td><b>AI voice (OmniDimension)</b></td><td><code>OMNIDIM_WEBHOOK_SECRET</code>, <code>OMNIDIM_POSTCALL_SECRET</code>, <code>OMNIDIM_ALLOWED_ORIGINS</code>, <code>OMNIDIM_API_KEY</code>, <code>OMNIDIM_AGENT_ID</code></td></tr>
+    <tr><td><b>Google Sheets mirror</b></td><td><code>SHEETS_WEBHOOK_URL</code>, <code>SHEETS_SECRET</code></td></tr>
+    <tr><td><b>Hospital details</b></td><td><code>PUBLIC_BASE_URL</code>, <code>HOSPITAL_ADDRESS</code>, <code>HOSPITAL_MAPS_URL</code>, <code>AI_RECEPTIONIST_NUMBER</code></td></tr>
+  </tbody>
+</table>
+<div class="warn"><b>Never</b> upload <code>.env</code> to GitHub (it is in <code>.gitignore</code>). Only <code>.env.example</code>, which has no real values, is saved.</div></div>
+
+<div class="step"><h3>Step 4 – Database (XAMPP MySQL)</h3>
+<ol>
+  <li>Open the XAMPP Control Panel → <b>Start MySQL</b> (port 3306).</li>
+  <li>Create the tables and the three doctors with their timings, then check:</li>
+</ol>
+<pre>npm run db:setup
+npm run test:mysql</pre></div>
+
+<div class="step"><h3>Step 5 – Start the hospital server</h3>
+<pre>npm start          # opens http://localhost:3000
+npm test           # 106 automatic tests should pass</pre>
+<p>Admin dashboard: <code>http://localhost:3000/admin</code> (log in with ADMIN_USERNAME / ADMIN_PASSWORD).</p></div>
+
+<div class="step"><h3>Step 6 – Public address for the AI agent (tunnel)</h3>
+<pre>cloudflared tunnel --url http://localhost:3000</pre>
+<p>Copy the <code>https://….trycloudflare.com</code> address it prints. It changes every time the tunnel restarts, so update OmniDimension (Step 7) when it changes.</p></div>
+
+<div class="step"><h3>Step 7 – AI phone receptionist (OmniDimension)</h3>
+<ol>
+  <li>Keep the agent’s existing phone number and <b>Incoming</b> direction.</li>
+  <li>Paste the prompt from <code>omnidimension/agent-prompt.md</code>.</li>
+  <li>Integrations → Custom API: add each tool from the table in section 3, using <code>&lt;tunnel address&gt;/api/voice/…</code> and the header <code>X-Webhook-Secret</code>. Full details are in <code>omnidimension/tools.md</code>.</li>
+  <li>Add the <b>save_request</b> tool (Google Sheets fallback) and the Post-Call webhook, following <code>google-sheets/OMNIDIMENSION_STEPS.md</code>.</li>
+  <li>Make a test call yourself to check it.</li>
+</ol></div>
+
+<div class="step"><h3>Step 8 – Google Sheet + Apps Script (always-on layer)</h3>
+<ol>
+  <li>Create the Sheet “Lakshmi Hospital – Calls &amp; Requests” → Extensions → <b>Apps Script</b>.</li>
+  <li>Paste <code>google-sheets/Code.gs</code> (and <code>WhatsApp.gs</code> if you use the WhatsApp bot).</li>
+  <li>Project Settings → Script Properties → add <code>SHEETS_SECRET</code>. (<code>REQUEST_COUNTER</code> is created automatically and starts at LMH1001.)</li>
+  <li>Run <b>setupSheets</b> once and allow access. This creates the tabs Requests, Call Log, WA Sessions and WA Errors.</li>
+  <li>Deploy → New deployment → Web app → Execute as <i>Me</i>, Access <i>Anyone</i> → copy the <code>/exec</code> address.</li>
+  <li>After every code change: <b>Deploy → Manage deployments → Edit → Version: New version → Deploy</b>. This keeps the same /exec address.</li>
+</ol>
+<p class="small">Full guide: <code>google-sheets/SETUP.md</code>.</p></div>
+
+<div class="step"><h3>Step 9 – Cloudflare Worker (lakshmi-sheets)</h3>
+<ol>
+  <li>Cloudflare → Workers &amp; Pages → Create Worker named <b>lakshmi-sheets</b> → Edit code.</li>
+  <li>Set <code>SHEETS_URL</code> (the /exec address) and <code>SHEETS_SECRET</code> at the top of <code>worker.js</code>.</li>
+  <li>Paste the website-chat block from <code>cloudflare/webchat-snippet.js</code> below the line <code>if (req.method !== "POST")</code> → <b>Deploy</b>.</li>
+</ol></div>
+
+<div class="step"><h3>Step 10 – Public patient website (Vercel)</h3>
+<p>The page is <code>docs/index.html</code>, with doctor photos in <code>docs/images/</code>. In <code>docs/index.html</code>, set <code>CALL_NUMBER</code> and <code>WEBCHAT_URL</code>; the doctor timings are in <code>SESSIONS</code>.</p>
+<pre>cd docs
+vercel --prod      # → https://lakshmi-hospital.vercel.app</pre></div>
+
+<div class="step"><h3>Step 11 – New homepage (Next.js + Tailwind)</h3>
+<p>All hospital details are in <code>homepage/lib/site.js</code>; the design tokens are in <code>homepage/tailwind.config.js</code>.</p>
+<pre>cd homepage
+vercel --prod      # Vercel builds it in the cloud</pre></div>
+
+<div class="step"><h3>Step 12 – Mobile app (Expo Go)</h3>
+<ol>
+  <li>In <code>mobile/.env</code> set <code>EXPO_PUBLIC_API_URL=http://192.168.29.12:3000</code> (the PC’s Wi-Fi address).</li>
+  <li>Start it:</li>
+</ol>
+<pre>cd mobile
+npm install
+set REACT_NATIVE_PACKAGER_HOSTNAME=192.168.29.12
+npx expo start --offline --port 8081</pre>
+<p>On the phone, which must be on the same Wi-Fi: open Expo Go → Enter URL manually → <code>exp://192.168.29.12:8081</code>.</p></div>
+
+<div class="step"><h3>Step 13 – Save to GitHub</h3>
+<pre>git add -A
+git commit -m "Describe the change"
+git push origin main</pre></div>
+
+<h2>5. Daily running checklist (hospital PC)</h2>
+<div class="two">
+  <div>
+    <b>When the PC is ON</b>
+    <ol>
+      <li>XAMPP → Start MySQL</li>
+      <li><code>npm start</code> (server, port 3000)</li>
+      <li><code>cloudflared tunnel --url http://localhost:3000</code></li>
+      <li>Optional: <code>npx expo start</code> in <code>mobile/</code></li>
+    </ol>
+  </div>
+  <div>
+    <b>When the PC is OFF</b>
+    <ul>
+      <li>The website chat still saves to the Google Sheet ✔</li>
+      <li>The AI call still answers and saves requests to the Sheet ✔</li>
+      <li>Real-time slot booking, the admin dashboard and the mobile app ✖ (need the PC)</li>
+    </ul>
+  </div>
+</div>
+
+<h2>6. Security rules followed</h2>
+<ul>
+  <li>No secret (API keys, webhook secrets, database password) is in any website or app code. Secrets live only in <code>.env</code>, Script Properties and the Cloudflare Worker.</li>
+  <li>The phone number is never shown as text; it is used only inside <code>tel:</code> Call links.</li>
+  <li>Every webhook and tool request is checked with a secret; the website chat goes through the Worker so the browser never sees the secret.</li>
+  <li>Duplicate bookings are blocked by the database (one booking per doctor, date and time).</li>
+  <li>Patient input is cleaned before saving, so it cannot become a spreadsheet formula.</li>
+</ul>
+
+<h2>7. Links &amp; key files</h2>
+<table>
+  <tbody>
+    <tr><td style="width:34%">Public patient page</td><td>https://lakshmi-hospital.vercel.app</td></tr>
+    <tr><td>New homepage</td><td>https://homepage-sigma-one-29.vercel.app</td></tr>
+    <tr><td>Full site on the PC</td><td>http://localhost:3000 · same Wi-Fi: http://192.168.29.12:3000</td></tr>
+    <tr><td>Mobile app (Expo Go)</td><td>exp://192.168.29.12:8081 (same Wi-Fi, PC on)</td></tr>
+    <tr><td>Code (GitHub)</td><td>github.com/mnivi2021-commits/LakshmimulltiyDoctrappot2026</td></tr>
+    <tr><td>Server / API</td><td><code>server.js</code>, <code>src/app.js</code>, <code>src/routes/</code>, <code>src/services/</code></td></tr>
+    <tr><td>Database setup</td><td><code>src/db/</code> (setup, seed with doctors and timings)</td></tr>
+    <tr><td>Google Sheets layer</td><td><code>google-sheets/Code.gs</code>, <code>WhatsApp.gs</code>, <code>SETUP.md</code></td></tr>
+    <tr><td>Worker code</td><td><code>cloudflare/webchat-snippet.js</code></td></tr>
+    <tr><td>Voice agent setup</td><td><code>omnidimension/agent-prompt.md</code>, <code>tools.md</code></td></tr>
+    <tr><td>Websites / app</td><td><code>docs/</code> · <code>homepage/</code> · <code>mobile/</code></td></tr>
+    <tr><td>Tests</td><td><code>test/</code> (106 tests: <code>npm test</code>)</td></tr>
+  </tbody>
+</table>
+
+<h2>8. Still to do</h2>
+<ul>
+  <li>Paste the latest <code>Code.gs</code> → Deploy a New version; paste the latest Worker code → Deploy. This enables one Sheet row per chat and LMH request numbers.</li>
+  <li>Send each doctor’s specialty for the “Meet Our Doctors” cards.</li>
+  <li>Send the full street address and the Google Maps embed link for the homepage.</li>
+  <li>Delete the test rows “TEST – please delete” from the Requests sheet.</li>
+</ul>
+
+</body>
+</html>
