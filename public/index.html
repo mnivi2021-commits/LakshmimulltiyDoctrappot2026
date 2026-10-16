@@ -70,15 +70,19 @@
   .steps code { font: inherit; font-weight: 700; color: var(--brand); white-space: nowrap; }
   @media (min-width: 760px) { .steps { grid-template-columns: repeat(3, 1fr); } }
 
-  /* Doctors */
-  .doctors { display: grid; gap: 16px; margin-top: 18px; }
-  @media (min-width: 760px) { .doctors { grid-template-columns: repeat(3, 1fr); } }
-  .doc { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 4px; }
-  .doc .dept { color: var(--brand); font-weight: 700; font-size: .95rem; text-transform: uppercase; letter-spacing: .03em; }
-  .doc .dept-ta { color: var(--muted); font-weight: 600; font-size: .9rem; }
-  .doc h3 { font-size: 1.4rem; margin: 6px 0 0; }
-  .doc .qual { color: var(--muted); margin: 0 0 12px; }
-  .doc button { margin-top: auto; }
+  /* Meet Our Doctors: Head on top, two doctors below; one column on mobile */
+  .team { display: flex; flex-direction: column; align-items: center; gap: 24px; margin-top: 22px; }
+  .team-row { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  @media (min-width: 680px) { .team-row { flex-direction: row; align-items: stretch; justify-content: center; } }
+  .doc-card { width: 294px; max-width: 100%; box-sizing: border-box; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: 0 6px 20px rgba(15, 76, 69, .10); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  /* One shared size for all three photos */
+  .doc-photo { display: block; width: 260px; max-width: 100%; height: 320px; object-fit: cover; object-position: top center; border-radius: 14px; background: var(--mint); }
+  .doc-photo.landscape { object-position: 45% top; } /* keeps the face centred in a wide photo */
+  .doc-badge { display: inline-block; margin-top: 12px; padding: 4px 12px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: .9rem; }
+  .doc-card h3 { font-size: 1.4rem; margin: 10px 0 0; }
+  .doc-card .doc-badge + h3 { margin-top: 6px; }
+  .doc-card .role { color: var(--muted); margin: 0 0 14px; }
+  .doc-card .btn { margin-top: auto; }
 
   /* Buttons */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 12px 22px; border-radius: 14px; border: 2px solid var(--brand); background: #fff; color: var(--brand); font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; text-decoration: none; width: 100%; text-align: center; line-height: 1.25; }
@@ -226,6 +230,35 @@
     </div>
   </section>
 
+  <section id="doctors" aria-labelledby="doctors-title">
+    <div class="wrap">
+      <h2 id="doctors-title">Meet Our Doctors<span class="ta" lang="ta">எங்கள் மருத்துவர்கள்</span></h2>
+      <div class="team">
+        <article class="doc-card">
+          <img class="doc-photo" src="/images/dr-vishwa.jpg" alt="Dr. Vishwa" width="260" height="320" loading="lazy">
+          <span class="doc-badge">Head of Hospital</span>
+          <h3>Dr. Vishwa</h3>
+          <p class="role">Specialty</p>
+          <button type="button" class="btn btn-primary js-book" data-doctor="Vishwa" aria-haspopup="dialog" aria-label="Book appointment with Dr. Vishwa">Book Appointment</button>
+        </article>
+        <div class="team-row">
+          <article class="doc-card">
+            <img class="doc-photo landscape" src="/images/dr-nivi.jpg" alt="Dr. Nivi" width="260" height="320" loading="lazy">
+            <h3>Dr. Nivi</h3>
+            <p class="role">Specialty</p>
+            <button type="button" class="btn btn-primary js-book" data-doctor="Nivi" aria-haspopup="dialog" aria-label="Book appointment with Dr. Nivi">Book Appointment</button>
+          </article>
+          <article class="doc-card">
+            <img class="doc-photo" src="/images/dr-vijul.jpg" alt="Dr. Vijul" width="260" height="320" loading="lazy">
+            <h3>Dr. Vijul</h3>
+            <p class="role">Specialty</p>
+            <button type="button" class="btn btn-primary js-book" data-doctor="Vijul" aria-haspopup="dialog" aria-label="Book appointment with Dr. Vijul">Book Appointment</button>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="how" aria-labelledby="how-title">
     <div class="wrap">
       <h2 id="how-title">How phone booking works<span class="ta" lang="ta">தொலைபேசி முன்பதிவு எப்படி</span></h2>
@@ -234,13 +267,6 @@
         <li><b>We check free slots</b><span>We look at the doctor's real schedule and tell you what is free.</span></li>
         <li><b>Confirm &amp; get your number</b><span>You get an appointment number like <code>LMH-0012</code>. Please keep it.</span></li>
       </ol>
-    </div>
-  </section>
-
-  <section id="doctors" aria-labelledby="doctors-title">
-    <div class="wrap">
-      <h2 id="doctors-title">Our doctors<span class="ta" lang="ta">எங்கள் மருத்துவர்கள்</span></h2>
-      <div class="doctors" id="doctorList" aria-live="polite"></div>
     </div>
   </section>
 
@@ -326,32 +352,20 @@
     document.querySelectorAll('.js-call').forEach(function (a) { a.href = callHref; });
 
     // ---- Doctors (real list from the hospital database) ----
-    const listEl = document.getElementById('doctorList');
-
     function renderDoctors(doctors) {
-      listEl.textContent = '';
       // The chat box reads this list for its doctor buttons.
       window.LMH_DOCTORS = doctors.map(function (d) { return d.name + ' – ' + d.en; });
-      doctors.forEach(function (d) {
-        const label = d.name + ' – ' + d.en;
-        const card = document.createElement('article');
-        card.className = 'doc';
-        const dept = document.createElement('div'); dept.className = 'dept'; dept.textContent = d.en;
-        const deptTa = document.createElement('div'); deptTa.className = 'dept-ta'; deptTa.lang = 'ta'; deptTa.textContent = d.ta || '';
-        const h = document.createElement('h3'); h.textContent = d.name;
-        const q = document.createElement('p'); q.className = 'qual'; q.textContent = d.qualification;
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'btn btn-primary';
-        b.textContent = 'Request appointment';
-        b.setAttribute('aria-label', 'Request appointment with ' + d.name + ', ' + d.en + ' in the chat box');
-        b.setAttribute('aria-haspopup', 'dialog');
-        b.addEventListener('click', function () {
-          if (window.LMHChat) window.LMHChat.open(label, b);
-        });
-        card.append(dept, deptTa, h, q, b);
-        listEl.appendChild(card);
-      });
     }
+
+    // "Meet Our Doctors" cards: Book Appointment opens the chat box (this page's
+    // booking form) with that doctor already chosen.
+    document.querySelectorAll('.js-book').forEach(function (b) {
+      b.addEventListener('click', function () {
+        const key = b.getAttribute('data-doctor');
+        const label = (window.LMH_DOCTORS || []).filter(function (x) { return x.indexOf(key) !== -1; })[0] || ('Dr. ' + key);
+        if (window.LMHChat) window.LMHChat.open(label, b);
+      });
+    });
 
     renderDoctors(SEED_DOCTORS);
     fetch('/api/doctors', { headers: { Accept: 'application/json' } })
