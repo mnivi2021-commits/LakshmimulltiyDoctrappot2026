@@ -93,7 +93,12 @@ test('docs/index.html (GitHub Pages / Vercel copy): chat box present, posts to W
   // request number from the Worker reply (LMH1001…) is shown in the final confirmation
   assert.match(html, /j \? done\(j\.request_no\) : failed\(\)/);
   assert.match(html, /\/\^LMH\\d\{4,\}\$\/\.test/);
-  assert.match(html, /Your appointment request number: ' \+ no \+ '\. Please keep it\./);
+  assert.match(html, /refLine: 'Your booking reference number'/);
+  assert.match(html, /: S\.data\.ref;/, 'browser reference used when the Sheet sends no LMH number');
+  assert.match(html, /d\.reasonOut = \(d\.reason \? d\.reason \+ ' ' : ''\) \+ '\[Ref ' \+ d\.ref \+ '\]'/, 'reference saved with the request');
+  // each doctor's session times + preferred time slots
+  assert.match(html, /Vijul: \{ Morning: \['10:00', '13:30'\], Evening: \['18:00', '22:00'\] \}/);
+  assert.match(html, /function goSlot\(\)/);
   // one Sheet row per chat session: ID + transcript in sessionStorage (guarded), updates after each answer,
   // final update by sendBeacon (or keepalive fetch) when the chat ends/closes or the page is hidden
   assert.match(html, /sessionStorage\.getItem\(STORE_KEY\)/);

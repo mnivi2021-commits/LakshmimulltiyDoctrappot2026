@@ -399,7 +399,10 @@
         askDate: 'Choose your preferred date (Monday to Saturday).',
         badDate: 'Please choose today or a later date.',
         sunday: 'We are closed on Sunday. Please choose another day.',
-        askTime: 'Morning or evening?', morning: 'Morning', evening: 'Evening',
+        askTime: 'Morning or evening? The doctor’s timings are shown.', morning: 'Morning', evening: 'Evening',
+        askSlot: 'Choose your preferred time. Our staff will call you to confirm it.', anyTime: 'Any time',
+        noTimesToday: 'No more times are left today for this doctor. Please choose another date.',
+        refLine: 'Your booking reference number', refNote: 'For reference only – our staff will call you to confirm the time.',
         askReason: 'Reason for the visit, in a few words (optional).', skip: 'Skip',
         askType: 'Is this a new patient or an existing patient?', newP: 'New patient', existingP: 'Existing patient',
         askEmail: 'If you want a confirmation email, please give your email ID. It’s optional.', badEmail: 'Please enter a valid email address, or tap Skip.', fEmail: 'Email',
@@ -421,7 +424,10 @@
         askDate: 'விருப்பமான தேதியைத் தேர்வு செய்யவும் (திங்கள் – சனி).',
         badDate: 'இன்று அல்லது அதற்குப் பிந்தைய தேதியைத் தேர்வு செய்யவும்.',
         sunday: 'ஞாயிறு விடுமுறை. வேறு நாளைத் தேர்வு செய்யவும்.',
-        askTime: 'காலையா, மாலையா?', morning: 'காலை', evening: 'மாலை',
+        askTime: 'காலையா, மாலையா? மருத்துவரின் நேரங்கள் காட்டப்பட்டுள்ளன.', morning: 'காலை', evening: 'மாலை',
+        askSlot: 'விருப்பமான நேரத்தைத் தேர்வு செய்யவும். உறுதிசெய்ய எங்கள் ஊழியர்கள் அழைப்பார்கள்.', anyTime: 'எந்த நேரமும்',
+        noTimesToday: 'இன்று இந்த மருத்துவருக்கு நேரம் இல்லை. வேறு தேதியைத் தேர்வு செய்யவும்.',
+        refLine: 'உங்கள் முன்பதிவு குறிப்பு எண்', refNote: 'குறிப்புக்காக மட்டும் – நேரத்தை உறுதிசெய்ய எங்கள் ஊழியர்கள் அழைப்பார்கள்.',
         askReason: 'வருகைக்கான காரணம் (விருப்பம்).', skip: 'தவிர்',
         askType: 'புதிய நோயாளியா, பழைய நோயாளியா?', newP: 'புதிய நோயாளி', existingP: 'பழைய நோயாளி',
         askEmail: 'உறுதிப்படுத்தல் மின்னஞ்சல் வேண்டுமெனில், உங்கள் மின்னஞ்சல் முகவரியைத் தரவும். இது விருப்பத்திற்குரியது.', badEmail: 'சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும், அல்லது "தவிர்" அழுத்தவும்.', fEmail: 'மின்னஞ்சல்',
@@ -490,7 +496,7 @@
       return JSON.stringify({
         action: 'update', session_id: chat.id, transcript: transcriptText(),
         patient_name: d.patient_name || '', mobile: d.mobile || '', doctor: d.doctor || '',
-        preferred_date: d.preferred_date || '', preferred_time: d.preferred_time || '', reason: d.reason || '',
+        preferred_date: d.preferred_date || '', preferred_time: d.preferred_time || '', reason: d.reasonOut || d.reason || '',
         patient_type: d.patient_type || '', email: d.email || '',
         language: S && S.lang ? (S.lang === 'ta' ? 'Tamil' : 'English') : '', website: honeypot.value || '',
       });
@@ -579,6 +585,11 @@
       if (!panel.hidden) input.focus();
       scrollLog();
     }
+    function bookingRef() { // e.g. REF-161026-4827 (date + 4 random digits)
+      var d = new Date(), n;
+      try { n = crypto.getRandomValues(new Uint32Array(1))[0] % 10000; } catch (e) { n = Math.floor(Math.random() * 10000); }
+      return 'REF-' + String(d.getDate()).padStart(2, '0') + String(d.getMonth() + 1).padStart(2, '0') + String(d.getFullYear()).slice(2) + '-' + String(n).padStart(4, '0');
+    }
     function validEmail(v) { return v.length <= 120 && /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[A-Za-z]{2,}$/.test(v); }
     function todayLocal() {
       var d = new Date();
@@ -624,12 +635,54 @@
       }));
     }
     function goDate() { S.step = 'date'; clearUI(); bubble(t('askDate'), 'bot'); askInput('date', t('phDate')); }
+    // Each doctor's OPD sessions (24-hour "HH:MM"). Times picked here are the
+    // patient's PREFERRED time – staff confirm the real slot by phone.
+    var SESSIONS = {
+      Vijul: { Morning: ['10:00', '13:30'], Evening: ['18:00', '22:00'] },
+      Vishwa: { Morning: ['09:30', '14:00'], Evening: ['17:00', '20:00'] },
+      Nivi: { Morning: ['10:00', '14:00'], Evening: ['17:00', '20:00'] },
+    };
+    var DEFAULT_SESSIONS = { Morning: ['09:30', '14:00'], Evening: ['17:00', '20:00'] };
+    var SLOT_MINUTES = 30;
+    function sessionsFor(doctor) {
+      for (var k in SESSIONS) if (Object.prototype.hasOwnProperty.call(SESSIONS, k) && String(doctor || '').indexOf(k) !== -1) return SESSIONS[k];
+      return DEFAULT_SESSIONS;
+    }
+    function toMin(hm) { var p = hm.split(':').map(Number); return p[0] * 60 + p[1]; }
+    function time12(min) {
+      var h = Math.floor(min / 60), m = min % 60;
+      return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + ' ' + (h < 12 ? 'AM' : 'PM');
+    }
+    function slotsFor(range) { // start times inside the session; for today, only times at least 30 min from now
+      var out = [], end = toMin(range[1]), from = toMin(range[0]);
+      if (S.data.preferred_date === todayLocal()) {
+        var now = new Date(); var soon = now.getHours() * 60 + now.getMinutes() + 30;
+        while (from < soon) from += SLOT_MINUTES;
+      }
+      for (var m = from; m + SLOT_MINUTES <= end; m += SLOT_MINUTES) out.push(time12(m));
+      return out;
+    }
+    function sessionName(s) { return s === 'Morning' ? t('morning') : t('evening'); }
+    function timeLabel(d) { return sessionName(d.session || d.preferred_time) + (d.slot ? ' – ' + d.slot : ''); }
     function goTime() {
-      S.step = 'time'; clearUI(); bubble(t('askTime'), 'bot');
-      quickButtons([
-        { label: t('morning'), onClick: function () { bubble(t('morning'), 'user'); S.data.preferred_time = 'Morning'; goReason(); } },
-        { label: t('evening'), onClick: function () { bubble(t('evening'), 'user'); S.data.preferred_time = 'Evening'; goReason(); } },
-      ]);
+      S.step = 'time'; clearUI();
+      var ses = sessionsFor(S.data.doctor);
+      var opts = ['Morning', 'Evening'].filter(function (s) { return slotsFor(ses[s]).length; });
+      if (!opts.length) { bubble(t('noTimesToday'), 'bot'); return goDate(); }
+      bubble(t('askTime'), 'bot');
+      quickButtons(opts.map(function (s) {
+        var label = sessionName(s) + ' · ' + time12(toMin(ses[s][0])) + ' – ' + time12(toMin(ses[s][1]));
+        return { label: label, onClick: function () { bubble(label, 'user'); S.data.session = s; goSlot(); } };
+      }));
+    }
+    function goSlot() {
+      S.step = 'slot'; clearUI(); bubble(t('askSlot'), 'bot');
+      var s = S.data.session;
+      var list = slotsFor(sessionsFor(S.data.doctor)[s]).map(function (time) {
+        return { label: time, onClick: function () { bubble(time, 'user'); S.data.slot = time; S.data.preferred_time = s + ' – ' + time; goReason(); } };
+      });
+      list.push({ label: t('anyTime'), onClick: function () { bubble(t('anyTime'), 'user'); S.data.slot = ''; S.data.preferred_time = s; goReason(); } });
+      quickButtons(list);
     }
     function goReason() {
       S.step = 'reason'; clearUI(); bubble(t('askReason'), 'bot'); askInput('reason', t('phReason'));
@@ -655,7 +708,7 @@
         t('fMobile') + ': ' + d.mobile + '\n' +
         t('fDoctor') + ': ' + d.doctor + '\n' +
         t('fDate') + ': ' + prettyDate(d.preferred_date) + '\n' +
-        t('fTime') + ': ' + (d.preferred_time === 'Morning' ? t('morning') : t('evening')) + '\n' +
+        t('fTime') + ': ' + timeLabel(d) + '\n' +
         t('fReason') + ': ' + (d.reason || t('none')) + '\n' +
         t('fType') + ': ' + (d.patient_type === 'existing' ? t('existingP') : t('newP')) + '\n' +
         t('fEmail') + ': ' + (d.email || t('none')) + '\n\n' + t('note');
@@ -676,10 +729,14 @@
       btn.textContent = t('sending');
       record('Patient', t('confirm'));
       var d = S.data;
+      // Booking reference shown to the patient; also saved with the reason so
+      // staff can find the row (a retry keeps the same reference).
+      if (!d.ref) d.ref = bookingRef();
+      d.reasonOut = (d.reason ? d.reason + ' ' : '') + '[Ref ' + d.ref + ']';
       var payload = {
         session_id: chat.id, transcript: transcriptText(),
         patient_name: d.patient_name, mobile: d.mobile, doctor: d.doctor, preferred_date: d.preferred_date,
-        preferred_time: d.preferred_time, reason: d.reason || '', patient_type: d.patient_type,
+        preferred_time: d.preferred_time, reason: d.reasonOut, patient_type: d.patient_type,
         language: S.lang === 'ta' ? 'Tamil' : 'English', email: d.email || '', website: honeypot.value || '',
       };
       var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
@@ -694,9 +751,11 @@
     }
     function done(requestNo) {
       S.step = 'done'; clearUI();
-      var no = /^LMH\d{4,}$/.test(String(requestNo || '')) ? String(requestNo) : '';
+      // The Sheet's LMH number when it sends one, otherwise the reference made in the browser.
+      var no = /^LMH\d{4,}$/.test(String(requestNo || '')) ? String(requestNo) : S.data.ref;
       bubble(SUCCESS +
-        (no ? '\n\nYour appointment request number: ' + no + '. Please keep it.\nஉங்கள் சந்திப்பு கோரிக்கை எண்: ' + no + '. இதை வைத்துக்கொள்ளவும்.' : '') +
+        '\n\n' + T.en.refLine + ': ' + no + '\n' + T.en.refNote +
+        '\n' + T.ta.refLine + ': ' + no + '\n' + T.ta.refNote +
         (S.data.email ? '\n\n' + T.en.emailed + '\n' + T.ta.emailed : ''), 'bot', 'ok');
       quickButtons([{ label: t('again'), onClick: start }]);
       finalSync();
