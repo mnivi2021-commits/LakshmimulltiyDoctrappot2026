@@ -25,23 +25,23 @@ export const OPD_HOURS = [
 // photo: put a file in /public/doctors/ and set e.g. photo: '/doctors/vijul.jpg'
 export const DOCTORS = [
   {
-    slug: 'vijul', name: 'Mr. Vijul', qualification: 'MBBS, MS', speciality: 'Orthopaedic',
+    slug: 'vijul', name: 'Dr. Vijul', qualification: 'MBBS, MS', speciality: 'Orthopaedic',
     department: 'Orthopaedics', departmentTa: 'எலும்பு மருத்துவம்', days: 'Monday – Saturday',
     sessions: ['10:00 AM – 1:30 PM', '6:00 PM – 10:00 PM'], photo: '/doctors/dr-vijul.jpg',
   },
   {
-    slug: 'vishwa', name: 'Mr. Vishwa', qualification: 'MBBS, MD', speciality: 'Diabetologist',
+    slug: 'vishwa', name: 'Dr. Vishwa', qualification: 'MBBS, MD', speciality: 'Diabetologist',
     department: 'Diabetology', departmentTa: 'சர்க்கரை நோய்', days: 'Monday – Saturday',
     sessions: ['9:30 AM – 2:00 PM', '5:00 PM – 8:00 PM'], photo: '/doctors/dr-vishwa.jpg',
   },
   {
-    slug: 'nivi', name: 'Ms. Nivi', qualification: 'MBBS, MS', speciality: 'Heart Specialist',
+    slug: 'nivi', name: 'Dr. Nivi', qualification: 'MBBS, MS', speciality: 'Heart Specialist',
     department: 'Cardiology', departmentTa: 'இதய மருத்துவம்', days: 'Monday – Saturday',
     sessions: ['10:00 AM – 2:00 PM', '5:00 PM – 8:00 PM'], photo: '/doctors/dr-nivi.jpg',
   },
 ];
 
-// Same label format the Sheet already uses ("Mr. Vijul – Orthopaedic").
+// Same label format the Sheet already uses ("Dr. Vijul – Orthopaedic").
 export const doctorLabel = (d) => `${d.name} – ${d.speciality}`;
 
 // Events so any button can open the chat or preselect a doctor in the form.
