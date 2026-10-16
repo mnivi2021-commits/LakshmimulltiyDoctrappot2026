@@ -8,6 +8,10 @@
 <meta name="description" content="Lakshmi Multispecialty Hospital, Virudhunagar. Book your doctor's appointment with one call. Tamil, English and Hindi.">
 <meta name="theme-color" content="#0F4C45">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lakshmi Hospital">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Madurai:wght@400;600;700&display=swap">
@@ -70,6 +74,11 @@
   .steps span { color: var(--muted); }
   .steps code { font: inherit; font-weight: 700; color: var(--brand); white-space: nowrap; }
   @media (min-width: 760px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+
+  .install-app { display: inline-flex; flex-direction: column; align-items: center; margin-top: 16px; min-height: 52px; padding: 8px 18px; border-radius: 14px; border: 2px solid #fff; background: transparent; color: #fff; font: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; }
+  .install-app small { font-weight: 600; font-size: .85rem; color: #d9efe9; }
+  .install-app:hover { background: rgba(255, 255, 255, .12); }
+  .install-app[hidden] { display: none; }
 
   /* Meet Our Doctors: Head on top, two doctors below; one column on mobile */
   .team { display: flex; flex-direction: column; align-items: center; gap: 24px; margin-top: 22px; }
@@ -228,6 +237,7 @@
         </button>
       </div>
       <div class="langs" aria-label="Languages spoken"><span lang="ta">தமிழ்</span><span>English</span><span lang="hi">हिंदी</span></div>
+      <button type="button" class="install-app" id="installApp" hidden>📲 Install app on this phone<small lang="ta">செயலியாக நிறுவு</small></button>
     </div>
   </section>
 
@@ -351,6 +361,20 @@
 
     // Wire every call button from the settings above (the number is never shown as text).
     document.querySelectorAll('.js-call').forEach(function (a) { a.href = callHref; });
+
+    // Installable phone app: service worker + "Install app" button (shown only when the phone offers it).
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+    }
+    var installBtn = document.getElementById('installApp');
+    var installEvent = null;
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvent = e; installBtn.hidden = false; });
+    installBtn.addEventListener('click', function () {
+      if (!installEvent) return;
+      installEvent.prompt();
+      installEvent.userChoice.finally(function () { installEvent = null; installBtn.hidden = true; });
+    });
+    window.addEventListener('appinstalled', function () { installBtn.hidden = true; });
 
     // ---- Doctors (real list from the hospital database) ----
     function renderDoctors(doctors) {
